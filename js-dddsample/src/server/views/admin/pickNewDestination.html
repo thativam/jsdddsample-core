@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Cargo Administration — Change Destination</title>
+  <link rel="stylesheet" href="/admin.css"/>
+</head>
+<body>
+<div id="adminheader">
+  <img id="logotype" src="/images/dddsample_logotype_small.png" alt=""/>
+  <h1>Cargo Booking and Routing</h1>
+  <ul id="menu">
+    <li><a href="/views/admin/list.html">List all cargos</a></li>
+    <li><a href="/views/admin/register.html">Book new cargo</a></li>
+  </ul>
+</div>
+<div id="container">
+  <h2 id="pageTitle"></h2>
+  <form id="destForm">
+    <table>
+      <caption>Change destination</caption>
+      <tbody>
+        <tr>
+          <td>New destination</td>
+          <td><select id="destinationUnlocode"></select></td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td></td>
+          <td><button type="submit">Change destination</button></td>
+        </tr>
+      </tfoot>
+    </table>
+    <p id="errorMsg" class="error" style="display:none"></p>
+  </form>
+</div>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const trackingId = params.get('trackingId');
+
+  document.getElementById('pageTitle').textContent = `Change destination for cargo ${trackingId}`;
+
+  async function loadLocations() {
+    const res = await fetch('/admin/registration');
+    const data = await res.json();
+    const sel = document.getElementById('destinationUnlocode');
+    for (const loc of data.locations) {
+      const opt = document.createElement('option');
+      opt.value = loc.unLocode;
+      opt.textContent = `${loc.unLocode} — ${loc.name}`;
+      sel.appendChild(opt);
+    }
+  }
+
+  document.getElementById('destForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const destinationUnlocode = document.getElementById('destinationUnlocode').value;
+    const res = await fetch('/admin/changeDestination', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ trackingId, unlocode: destinationUnlocode }),
+    });
+    if (res.ok) {
+      window.location.href = `/views/admin/show.html?trackingId=${trackingId}`;
+    } else {
+      const data = await res.json();
+      const el = document.getElementById('errorMsg');
+      el.textContent = data.error || 'Failed to change destination';
+      el.style.display = 'block';
+    }
+  });
+
+  if (trackingId) loadLocations();
+</script>
+</body>
+</html>

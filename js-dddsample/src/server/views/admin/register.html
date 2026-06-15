@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Cargo Administration — Book new cargo</title>
+  <link rel="stylesheet" href="/admin.css"/>
+</head>
+<body>
+<div id="adminheader">
+  <img id="logotype" src="/images/dddsample_logotype_small.png" alt=""/>
+  <h1>Cargo Booking and Routing</h1>
+  <ul id="menu">
+    <li><a href="/views/admin/list.html">List all cargos</a></li>
+    <li><a href="/views/admin/register.html">Book new cargo</a></li>
+  </ul>
+</div>
+<div id="container">
+  <form id="bookForm">
+    <table>
+      <caption>Book new cargo</caption>
+      <tbody>
+        <tr>
+          <td>Origin</td>
+          <td><select id="originUnlocode"></select></td>
+        </tr>
+        <tr>
+          <td>Destination</td>
+          <td><select id="destinationUnlocode"></select></td>
+        </tr>
+        <tr>
+          <td>Arrival deadline:</td>
+          <td><input type="date" id="arrivalDeadline"/></td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td></td>
+          <td><button type="submit">Book</button></td>
+        </tr>
+      </tfoot>
+    </table>
+    <p id="errorMsg" class="error" style="display:none"></p>
+  </form>
+</div>
+<script>
+  async function loadLocations() {
+    const res = await fetch('/admin/registration');
+    const data = await res.json();
+    for (const sel of ['originUnlocode', 'destinationUnlocode']) {
+      const el = document.getElementById(sel);
+      for (const loc of data.locations) {
+        const opt = document.createElement('option');
+        opt.value = loc.unLocode;
+        opt.textContent = `${loc.unLocode} — ${loc.name}`;
+        el.appendChild(opt);
+      }
+    }
+  }
+
+  document.getElementById('bookForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const body = {
+      originUnlocode: document.getElementById('originUnlocode').value,
+      destinationUnlocode: document.getElementById('destinationUnlocode').value,
+      arrivalDeadline: document.getElementById('arrivalDeadline').value,
+    };
+    const res = await fetch('/admin/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      window.location.href = `/views/admin/show.html?trackingId=${data.trackingId}`;
+    } else {
+      const el = document.getElementById('errorMsg');
+      el.textContent = data.error;
+      el.style.display = 'block';
+    }
+  });
+
+  loadLocations();
+</script>
+</body>
+</html>

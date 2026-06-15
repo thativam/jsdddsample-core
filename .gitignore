@@ -6,3 +6,5 @@ target
 *~
 /.gradle/
 .DS_Store
+
+node_modules/

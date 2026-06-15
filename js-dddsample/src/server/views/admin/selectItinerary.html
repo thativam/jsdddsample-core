@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Cargo Administration — Select Itinerary</title>
+  <link rel="stylesheet" href="/admin.css"/>
+</head>
+<body>
+<div id="adminheader">
+  <img id="logotype" src="/images/dddsample_logotype_small.png" alt=""/>
+  <h1>Cargo Booking and Routing</h1>
+  <ul id="menu">
+    <li><a href="/views/admin/list.html">List all cargos</a></li>
+    <li><a href="/views/admin/register.html">Book new cargo</a></li>
+  </ul>
+</div>
+<div id="container">
+  <h2 id="pageTitle"></h2>
+  <p id="noRoutes" style="display:none">No routes found for this cargo.</p>
+  <form id="routeForm" style="display:none">
+    <table border="1" id="routeTable">
+      <caption>Suggested Itineraries</caption>
+      <thead>
+        <tr>
+          <td>Select</td>
+          <td>Voyage</td>
+          <td colspan="2">Load</td>
+          <td colspan="2">Unload</td>
+        </tr>
+      </thead>
+      <tbody id="routeBody"></tbody>
+    </table>
+    <br/>
+    <button type="submit">Assign cargo to route</button>
+  </form>
+</div>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const trackingId = params.get('trackingId');
+
+  document.getElementById('pageTitle').textContent = `Possible routes for cargo ${trackingId}`;
+
+  let candidateRoutes = [];
+
+  async function loadRoutes() {
+    const res = await fetch(`/admin/selectItinerary?trackingId=${trackingId}`);
+    const data = await res.json();
+    candidateRoutes = data.routeCandidates || [];
+
+    const tbody = document.getElementById('routeBody');
+
+    if (candidateRoutes.length === 0) {
+      document.getElementById('noRoutes').style.display = 'block';
+      return;
+    }
+
+    candidateRoutes.forEach((itinerary, idx) => {
+      itinerary.legs.forEach((leg, legIdx) => {
+        const tr = document.createElement('tr');
+        const isFirst = legIdx === 0;
+        const isLast = legIdx === itinerary.legs.length - 1;
+
+        if (isFirst) {
+          const selectCell = document.createElement('td');
+          selectCell.rowSpan = itinerary.legs.length;
+          const radio = document.createElement('input');
+          radio.type = 'radio';
+          radio.name = 'itineraryIdx';
+          radio.value = idx;
+          if (idx === 0) radio.checked = true;
+          selectCell.appendChild(radio);
+          tr.appendChild(selectCell);
+        }
+
+        tr.innerHTML += `
+          <td>${leg.voyageNumber}</td>
+          <td>${leg.from}</td>
+          <td>${leg.loadTime ? new Date(leg.loadTime).toLocaleDateString() : ''}</td>
+          <td>${leg.to}</td>
+          <td>${leg.unloadTime ? new Date(leg.unloadTime).toLocaleDateString() : ''}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Separator row between itineraries
+      if (idx < candidateRoutes.length - 1) {
+        const sep = document.createElement('tr');
+        sep.innerHTML = `<td colspan="6"><hr/></td>`;
+        tbody.appendChild(sep);
+      }
+    });
+
+    document.getElementById('routeForm').style.display = 'block';
+  }
+
+  document.getElementById('routeForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const selected = document.querySelector('input[name="itineraryIdx"]:checked');
+    if (!selected) return;
+
+    const itinerary = candidateRoutes[parseInt(selected.value, 10)];
+
+    const res = await fetch('/admin/assignItinerary', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ trackingId, itinerary }),
+    });
+
+    if (res.ok) {
+      window.location.href = `/views/admin/show.html?trackingId=${trackingId}`;
+    } else {
+      const data = await res.json();
+      alert(data.error || 'Failed to assign itinerary');
+    }
+  });
+
+  if (trackingId) loadRoutes();
+</script>
+</body>
+</html>

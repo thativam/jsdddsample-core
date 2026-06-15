@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Tracking cargo</title>
+  <link rel="stylesheet" href="/style.css"/>
+</head>
+<body>
+<div id="outer">
+  <div id="apptitle">
+    <img src="/images/dddsample_logotype.png" alt="Domain Driven Delivery"/>
+  </div>
+  <div id="body">
+    <div id="container">
+      <div id="search">
+        <table>
+          <tr>
+            <td>Enter your tracking id:</td>
+            <td><input type="text" id="idInput" placeholder="e.g. ABC123"/></td>
+            <td><button onclick="trackCargo()">Track!</button></td>
+          </tr>
+          <tr>
+            <td></td>
+            <td><p id="errorMsg" class="error" style="display:none"></p></td>
+            <td></td>
+          </tr>
+        </table>
+      </div>
+
+      <p id="hint"><em>Hint: try tracking "ABC123" or "JKL567".</em></p>
+
+      <div id="result" style="display:none">
+        <h2>Cargo <span id="trackingIdDisplay"></span> is now: <span id="statusText"></span></h2>
+        <p>Estimated time of arrival in <span id="destination"></span>: <span id="eta"></span></p>
+        <p id="nextActivity"></p>
+        <p id="misdirectedMsg" class="notify" style="display:none">
+          <img src="/images/error.png" alt=""/> Cargo is misdirected
+        </p>
+        <div id="history">
+          <h3>Handling History</h3>
+          <ul id="eventList" style="list-style-type:none"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="footer">
+    This application is written by <a href="http://www.citerus.se" target="_blank">Citerus</a>
+    and <a href="http://www.domainlanguage.com" target="_blank">Domain Language</a>
+  </div>
+</div>
+
+<script>
+  document.getElementById('idInput').focus();
+
+  async function trackCargo() {
+    const id = document.getElementById('idInput').value.trim();
+    if (!id) return;
+
+    document.getElementById('errorMsg').style.display = 'none';
+    document.getElementById('result').style.display = 'none';
+    document.getElementById('hint').style.display = 'none';
+
+    try {
+      const res = await fetch('/track?trackingId=' + encodeURIComponent(id));
+      if (!res.ok) {
+        const data = await res.json();
+        showError(data.error || 'Unknown tracking id');
+        return;
+      }
+      const cargo = await res.json();
+      renderCargo(cargo);
+    } catch (e) {
+      showError('Network error: ' + e.message);
+    }
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('errorMsg');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function renderCargo(cargo) {
+    document.getElementById('trackingIdDisplay').textContent = cargo.trackingId;
+    document.getElementById('statusText').textContent = cargo.statusText;
+    document.getElementById('destination').textContent = cargo.destination;
+    document.getElementById('eta').textContent = cargo.eta;
+    document.getElementById('nextActivity').textContent = cargo.nextExpectedActivity;
+
+    const misdirected = document.getElementById('misdirectedMsg');
+    misdirected.style.display = cargo.misdirected ? 'block' : 'none';
+
+    const list = document.getElementById('eventList');
+    list.innerHTML = '';
+    for (const ev of cargo.events) {
+      const li = document.createElement('li');
+      const img = document.createElement('img');
+      img.src = ev.expected ? '/images/tick.png' : '/images/cross.png';
+      img.style.verticalAlign = 'top';
+      li.appendChild(img);
+      li.appendChild(document.createTextNode(' ' + ev.description));
+      list.appendChild(li);
+    }
+
+    document.getElementById('history').style.display = cargo.events.length ? 'block' : 'none';
+    document.getElementById('result').style.display = 'block';
+  }
+
+  // Allow Enter key to trigger tracking
+  document.getElementById('idInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') trackCargo();
+  });
+</script>
+</body>
+</html>

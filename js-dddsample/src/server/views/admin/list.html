@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Cargo Administration</title>
+  <link rel="stylesheet" href="/admin.css"/>
+</head>
+<body>
+<div id="outer">
+  <div id="adminheader">
+    <img id="logotype" src="/images/dddsample_logotype_small.png" alt=""/>
+    <h1>Cargo Booking and Routing</h1>
+    <ul id="menu">
+      <li><a href="/views/admin/list.html">List all cargos</a></li>
+      <li><a href="/views/admin/register.html">Book new cargo</a></li>
+    </ul>
+  </div>
+  <div id="body">
+    <table id="cargoTable" border="1" width="600">
+      <caption>All cargos</caption>
+      <thead>
+        <tr><td>Tracking ID</td><td>Origin</td><td>Destination</td><td>Routed</td></tr>
+      </thead>
+      <tbody id="cargoBody"></tbody>
+    </table>
+  </div>
+</div>
+<script>
+  async function loadCargos() {
+    const res = await fetch('/admin/list');
+    const data = await res.json();
+    const tbody = document.getElementById('cargoBody');
+    for (const cargo of data.cargoList) {
+      const routedText = cargo.misrouted ? 'Misrouted' : (cargo.routed ? 'Yes' : 'No');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><a href="/views/admin/show.html?trackingId=${cargo.trackingId}">${cargo.trackingId}</a></td>
+        <td>${cargo.origin}</td>
+        <td>${cargo.finalDestination}</td>
+        <td>${routedText}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+  loadCargos();
+</script>
+</body>
+</html>

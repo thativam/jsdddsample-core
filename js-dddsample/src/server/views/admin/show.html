@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Cargo Administration — Details</title>
+  <link rel="stylesheet" href="/admin.css"/>
+</head>
+<body>
+<div id="adminheader">
+  <img id="logotype" src="/images/dddsample_logotype_small.png" alt=""/>
+  <h1>Cargo Booking and Routing</h1>
+  <ul id="menu">
+    <li><a href="/views/admin/list.html">List all cargos</a></li>
+    <li><a href="/views/admin/register.html">Book new cargo</a></li>
+  </ul>
+</div>
+<div id="container">
+  <table id="detailsTable">
+    <caption id="tableCaption"></caption>
+    <tbody>
+      <tr><td>Origin</td><td id="origin"></td></tr>
+      <tr><td>Destination</td><td id="finalDestination"></td></tr>
+      <tr><td></td><td><a id="changeDestLink" href="#">Change destination</a></td></tr>
+      <tr><td>Arrival deadline</td><td id="arrivalDeadline"></td></tr>
+    </tbody>
+  </table>
+
+  <div id="itinerarySection" style="display:none">
+    <p id="misroutedMsg" style="display:none"><em>Cargo is misrouted — <a id="rerouteLink" href="#">reroute this cargo</a></em></p>
+    <table border="1" id="itineraryTable">
+      <caption>Itinerary</caption>
+      <thead>
+        <tr><td>Voyage number</td><td colspan="2">Load</td><td colspan="2">Unload</td></tr>
+      </thead>
+      <tbody id="legBody"></tbody>
+    </table>
+  </div>
+
+  <div id="noItinerarySection" style="display:none">
+    <p><strong>Not routed</strong> — <a id="routeLink" href="#">Route this cargo</a></p>
+  </div>
+</div>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const trackingId = params.get('trackingId');
+
+  async function loadCargo() {
+    const res = await fetch(`/admin/show?trackingId=${trackingId}`);
+    const data = await res.json();
+    const cargo = data.cargo;
+
+    document.getElementById('tableCaption').textContent = `Details for cargo ${cargo.trackingId}`;
+    document.getElementById('origin').textContent = cargo.origin;
+    document.getElementById('finalDestination').textContent = cargo.finalDestination;
+    document.getElementById('changeDestLink').href = `/views/admin/changeDestination.html?trackingId=${cargo.trackingId}`;
+    document.getElementById('arrivalDeadline').textContent = cargo.arrivalDeadline ? cargo.arrivalDeadline.substring(0, 10) : '';
+
+    if (cargo.routed) {
+      document.getElementById('itinerarySection').style.display = 'block';
+      if (cargo.misrouted) {
+        const msg = document.getElementById('misroutedMsg');
+        document.getElementById('rerouteLink').href = `/views/admin/selectItinerary.html?trackingId=${cargo.trackingId}`;
+        msg.style.display = 'block';
+      }
+      const tbody = document.getElementById('legBody');
+      for (const leg of cargo.legs) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${leg.voyageNumber}</td>
+          <td>${leg.from}</td>
+          <td>${leg.loadTime ? new Date(leg.loadTime).toLocaleDateString() : ''}</td>
+          <td>${leg.to}</td>
+          <td>${leg.unloadTime ? new Date(leg.unloadTime).toLocaleDateString() : ''}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    } else {
+      const noIt = document.getElementById('noItinerarySection');
+      document.getElementById('routeLink').href = `/views/admin/selectItinerary.html?trackingId=${cargo.trackingId}`;
+      noIt.style.display = 'block';
+    }
+  }
+
+  if (trackingId) loadCargo();
+</script>
+</body>
+</html>
