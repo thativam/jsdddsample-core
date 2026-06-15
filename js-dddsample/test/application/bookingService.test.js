@@ -1,20 +1,20 @@
 'use strict';
 
-const BookingService = require('../../../src/application/BookingService');
-const CargoRepositoryInMem = require('../../../src/infrastructure/persistence/inmemory/CargoRepositoryInMem');
-const LocationRepositoryInMem = require('../../../src/infrastructure/persistence/inmemory/LocationRepositoryInMem');
-const VoyageRepositoryInMem = require('../../../src/infrastructure/persistence/inmemory/VoyageRepositoryInMem');
-const CargoFactory = require('../../../src/domain/model/cargo/CargoFactory');
-const ExternalRoutingService = require('../../../src/infrastructure/routing/ExternalRoutingService');
-const GraphTraversalService = require('../../../src/infrastructure/routing/GraphTraversalService');
-const GraphDAOStub = require('../../../src/infrastructure/routing/GraphDAOStub');
-const UnLocode = require('../../../src/domain/model/location/UnLocode');
-const TrackingId = require('../../../src/domain/model/cargo/TrackingId');
-const RoutingStatus = require('../../../src/domain/model/cargo/RoutingStatus');
-const Itinerary = require('../../../src/domain/model/cargo/Itinerary');
-const Leg = require('../../../src/domain/model/cargo/Leg');
-const { HONGKONG, STOCKHOLM, HELSINKI, MELBOURNE } = require('../../../src/infrastructure/sampledata/SampleLocations');
-const { v100, v200 } = require('../../../src/infrastructure/sampledata/SampleVoyages');
+const BookingService = require('../../src/application/BookingService');
+const CargoRepositoryInMem = require('../../src/infrastructure/persistence/inmemory/CargoRepositoryInMem');
+const LocationRepositoryInMem = require('../../src/infrastructure/persistence/inmemory/LocationRepositoryInMem');
+const VoyageRepositoryInMem = require('../../src/infrastructure/persistence/inmemory/VoyageRepositoryInMem');
+const CargoFactory = require('../../src/domain/model/cargo/CargoFactory');
+const ExternalRoutingService = require('../../src/infrastructure/routing/ExternalRoutingService');
+const GraphTraversalService = require('../../src/infrastructure/routing/GraphTraversalService');
+const GraphDAOStub = require('../../src/infrastructure/routing/GraphDAOStub');
+const UnLocode = require('../../src/domain/model/location/UnLocode');
+const TrackingId = require('../../src/domain/model/cargo/TrackingId');
+const RoutingStatus = require('../../src/domain/model/cargo/RoutingStatus');
+const Itinerary = require('../../src/domain/model/cargo/Itinerary');
+const Leg = require('../../src/domain/model/cargo/Leg');
+const { HONGKONG, STOCKHOLM, HELSINKI, MELBOURNE } = require('../../src/infrastructure/sampledata/SampleLocations');
+const { v100, v200 } = require('../../src/infrastructure/sampledata/SampleVoyages');
 
 function makeService() {
   const cargoRepo = new CargoRepositoryInMem();
