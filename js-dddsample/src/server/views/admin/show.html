@@ -52,7 +52,7 @@
     document.getElementById('tableCaption').textContent = `Details for cargo ${cargo.trackingId}`;
     document.getElementById('origin').textContent = cargo.origin;
     document.getElementById('finalDestination').textContent = cargo.finalDestination;
-    document.getElementById('changeDestLink').href = `/views/admin/changeDestination.html?trackingId=${cargo.trackingId}`;
+    document.getElementById('changeDestLink').href = `/views/admin/pickNewDestination.html?trackingId=${cargo.trackingId}`;
     document.getElementById('arrivalDeadline').textContent = cargo.arrivalDeadline ? cargo.arrivalDeadline.substring(0, 10) : '';
 
     if (cargo.routed) {

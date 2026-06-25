@@ -1,8 +1,11 @@
 'use strict';
 
 /**
- * Manual dependency injection / composition root.
- * Wires all components together.
+ * Composition root — manual dependency injection.
+ *
+ * Mirrors Spring's application context / @Bean wiring.
+ * Also wires the JMS-equivalent message queue consumers
+ * (see AsyncApplicationEvents for the queue ↔ consumer mapping).
  */
 
 const CargoRepositoryInMem = require('../infrastructure/persistence/inmemory/CargoRepositoryInMem');
@@ -23,35 +26,72 @@ const ExternalRoutingService = require('../infrastructure/routing/ExternalRoutin
 
 const BookingServiceFacade = require('../interfaces/booking/BookingServiceFacade');
 const SampleDataGenerator = require('../infrastructure/sampledata/SampleDataGenerator');
-const SynchronousApplicationEvents = require('../infrastructure/messaging/SynchronousApplicationEvents');
+const AsyncApplicationEvents = require('../infrastructure/messaging/AsyncApplicationEvents');
 
-// Repositories
+// ── Repositories ────────────────────────────────────────────────────────────
 const cargoRepository = new CargoRepositoryInMem();
 const handlingEventRepository = new HandlingEventRepositoryInMem();
 const locationRepository = new LocationRepositoryInMem();
 const voyageRepository = new VoyageRepositoryInMem();
 
-// Factories
+// ── Factories ────────────────────────────────────────────────────────────────
 const handlingEventFactory = new HandlingEventFactory(cargoRepository, voyageRepository, locationRepository);
 const cargoFactory = new CargoFactory(locationRepository, cargoRepository);
 
-// Routing
+// ── Routing (Pathfinder bounded context) ────────────────────────────────────
 const graphTraversalService = new GraphTraversalService(new GraphDAOStub());
 const routingService = new ExternalRoutingService(graphTraversalService, locationRepository, voyageRepository);
 
-// Application services
-const applicationEvents = new SynchronousApplicationEvents();
+// ── Async message queue (mirrors JmsApplicationEventsImpl) ──────────────────
+const applicationEvents = new AsyncApplicationEvents();
+
+// ── Application services ─────────────────────────────────────────────────────
 const bookingService = new BookingService(cargoRepository, locationRepository, routingService, cargoFactory);
 const handlingEventService = new HandlingEventService(handlingEventRepository, applicationEvents, handlingEventFactory);
 const cargoInspectionService = new CargoInspectionService(applicationEvents, cargoRepository, handlingEventRepository);
 
-// Wire circular dependency
-applicationEvents.setCargoInspectionService(cargoInspectionService);
+// ── Wire queue consumers (equivalent to @MessageDriven beans in Java) ────────
+//
+// Java:  handlingEventQueue  →  HandlingEventRegistrationCommandMDB
+//                              → HandlingEventService.registerHandlingEvent()
+applicationEvents.on('handlingEventQueue', (attempt) => {
+  try {
+    handlingEventService.registerHandlingEvent(
+      attempt.completionTime,
+      attempt.trackingId,
+      attempt.voyageNumber,
+      attempt.unLocode,
+      attempt.type
+    );
+  } catch (e) {
+    console.error('[handlingEventQueue] Failed to process attempt:', e.message);
+  }
+});
 
-// Facade
+// Java:  cargoHandledQueue  →  CargoHandledPlacerMDB
+//                            → CargoInspectionService.inspectCargo()
+applicationEvents.on('cargoHandledQueue', (event) => {
+  try {
+    cargoInspectionService.inspectCargo(event.cargo().trackingId());
+  } catch (e) {
+    console.error('[cargoHandledQueue] Failed to inspect cargo:', e.message);
+  }
+});
+
+// Java:  misdirectedCargoQueue  →  MisdirectedCargoMDB (notification)
+applicationEvents.on('misdirectedCargoQueue', (cargo) => {
+  console.warn(`[misdirectedCargoQueue] Cargo ${cargo.trackingId().idString()} is misdirected`);
+});
+
+// Java:  deliveredCargoQueue  →  DeliveredCargoMDB (notification)
+applicationEvents.on('deliveredCargoQueue', (cargo) => {
+  console.info(`[deliveredCargoQueue] Cargo ${cargo.trackingId().idString()} has arrived at destination`);
+});
+
+// ── Facade ───────────────────────────────────────────────────────────────────
 const bookingServiceFacade = new BookingServiceFacade(bookingService, locationRepository, cargoRepository, voyageRepository);
 
-// Load sample data
+// ── Sample data ───────────────────────────────────────────────────────────────
 new SampleDataGenerator(cargoRepository, voyageRepository, locationRepository, handlingEventRepository).generate();
 
 module.exports = {
