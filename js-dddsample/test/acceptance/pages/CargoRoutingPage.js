@@ -18,6 +18,7 @@ function CargoRoutingPage(page) {
     /** Select the first route and submit → CargoDetailsPage */
     async assignCargoToFirstRoute() {
       const CargoDetailsPage = require('./CargoDetailsPage');
+      await page.click('input[name="itineraryIdx"][value="0"]');
       await page.click('button[type="submit"]');
       await page.waitForURL('**/show.html**', { timeout: 8000 });
       await page.waitForFunction(
