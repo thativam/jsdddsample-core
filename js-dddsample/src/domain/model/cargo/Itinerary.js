@@ -6,84 +6,57 @@ const HandlingEventType = require('../handling/HandlingEventType');
 const END_OF_DAYS = new Date(8640000000000000);
 
 /**
- * An itinerary — ordered list of Legs.
+ * An itinerary — ordered list of legs.
  */
-class Itinerary {
-  /** @param {import('./Leg')[]} legs */
-  constructor(legs) {
-    if (!legs) throw new Error('Legs list is required');
-    if (legs.length === 0) throw new Error('Itinerary must have at least one leg');
-    this._legs = [...legs];
+function Itinerary(legs) {
+  if (!legs) throw new Error('Legs list is required');
+  if (legs.length === 0) throw new Error('Itinerary must have at least one leg');
+  const _legs = [...legs];
+
+  function lastLeg() {
+    return _legs.length === 0 ? null : _legs[_legs.length - 1];
   }
 
-  /** @returns {import('./Leg')[]} */
-  legs() { return [...this._legs]; }
+  function legs_() { return [..._legs]; }
+  function initialDepartureLocation() { return _legs.length === 0 ? Location.UNKNOWN : _legs[0].loadLocation(); }
+  function finalArrivalLocation()     { return _legs.length === 0 ? Location.UNKNOWN : lastLeg().unloadLocation(); }
+  function finalArrivalDate()         { return lastLeg() ? lastLeg().unloadTime() : END_OF_DAYS; }
 
-  /**
-   * Check whether a handling event is expected on this itinerary.
-   * @param {import('../handling/HandlingEvent')} event
-   * @returns {boolean}
-   */
-  isExpected(event) {
-    if (this._legs.length === 0) return true;
-    const Type = HandlingEventType;
-
-    if (event.type() === Type.RECEIVE) {
-      return this._legs[0].loadLocation().equals(event.location());
+  function isExpected(event) {
+    if (_legs.length === 0) return true;
+    const T = HandlingEventType;
+    if (event.type() === T.RECEIVE) {
+      return _legs[0].loadLocation().equals(event.location());
     }
-
-    if (event.type() === Type.LOAD) {
-      return this._legs.some(leg =>
+    if (event.type() === T.LOAD) {
+      return _legs.some(leg =>
         leg.loadLocation().sameIdentityAs(event.location()) &&
         leg.voyage().sameIdentityAs(event.voyage())
       );
     }
-
-    if (event.type() === Type.UNLOAD) {
-      return this._legs.some(leg =>
+    if (event.type() === T.UNLOAD) {
+      return _legs.some(leg =>
         leg.unloadLocation().equals(event.location()) &&
         leg.voyage().equals(event.voyage())
       );
     }
-
-    if (event.type() === Type.CLAIM) {
-      return this.lastLeg().unloadLocation().equals(event.location());
+    if (event.type() === T.CLAIM) {
+      return lastLeg().unloadLocation().equals(event.location());
     }
-
-    // CUSTOMS
-    return true;
+    return true; // CUSTOMS
   }
 
-  /** @returns {Location} */
-  initialDepartureLocation() {
-    return this._legs.length === 0 ? Location.UNKNOWN : this._legs[0].loadLocation();
+  function sameValueAs(other) {
+    if (!other || typeof other.legs !== 'function') return false;
+    const ol = other.legs();
+    if (_legs.length !== ol.length) return false;
+    return _legs.every((l, i) => l.equals(ol[i]));
   }
+  function equals(other) { return sameValueAs(other); }
 
-  /** @returns {Location} */
-  finalArrivalLocation() {
-    return this._legs.length === 0 ? Location.UNKNOWN : this.lastLeg().unloadLocation();
-  }
-
-  /** @returns {Date} */
-  finalArrivalDate() {
-    const last = this.lastLeg();
-    return last ? last.unloadTime() : END_OF_DAYS;
-  }
-
-  /** @returns {import('./Leg')|null} */
-  lastLeg() {
-    return this._legs.length === 0 ? null : this._legs[this._legs.length - 1];
-  }
-
-  sameValueAs(other) {
-    if (!(other instanceof Itinerary)) return false;
-    if (this._legs.length !== other._legs.length) return false;
-    return this._legs.every((l, i) => l.equals(other._legs[i]));
-  }
-
-  equals(other) { return this.sameValueAs(other); }
+  return { legs: legs_, lastLeg, initialDepartureLocation, finalArrivalLocation, finalArrivalDate, isExpected, sameValueAs, equals };
 }
 
-Itinerary.EMPTY_ITINERARY = null; // Null object — used when no itinerary assigned
+Itinerary.EMPTY_ITINERARY = null;
 
 module.exports = Itinerary;

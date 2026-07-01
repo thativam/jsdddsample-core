@@ -19,7 +19,7 @@ module.exports = function trackingRoutes(cargoRepository, handlingEventRepositor
     }
 
     try {
-      const trkId = new TrackingId(trackingId);
+      const trkId = TrackingId(trackingId);
       const cargo = cargoRepository.find(trkId);
       if (!cargo) {
         return res.status(404).json({ error: `Unknown tracking id: ${trackingId}` });
@@ -29,7 +29,7 @@ module.exports = function trackingRoutes(cargoRepository, handlingEventRepositor
         .lookupHandlingHistoryOfCargo(trkId)
         .distinctEventsByCompletionTime();
 
-      const adapter = new CargoTrackingViewAdapter(cargo, handlingEvents);
+      const adapter = CargoTrackingViewAdapter(cargo, handlingEvents);
 
       res.json({
         trackingId: adapter.getTrackingId(),

@@ -10,7 +10,7 @@ const { HONGKONG, STOCKHOLM, MELBOURNE } = require('../../../src/infrastructure/
 const { v100 } = require('../../../src/infrastructure/sampledata/SampleVoyages');
 
 function makeCargo(id) {
-  return new Cargo(new TrackingId(id), new RouteSpecification(HONGKONG, STOCKHOLM, new Date('2009-12-31')));
+  return Cargo(TrackingId(id), RouteSpecification(HONGKONG, STOCKHOLM, new Date('2009-12-31')));
 }
 
 describe('HandlingHistory', () => {
@@ -24,19 +24,19 @@ describe('HandlingHistory', () => {
     const t1 = new Date('2009-03-01');
     const t2 = new Date('2009-03-05');
     const t3 = new Date('2009-03-10');
-    const e1 = new HandlingEvent(cargo, t1, t1, HandlingEventType.RECEIVE, HONGKONG);
-    const e2 = new HandlingEvent(cargo, t2, t2, HandlingEventType.LOAD, HONGKONG, v100);
-    const e3 = new HandlingEvent(cargo, t3, t3, HandlingEventType.UNLOAD, STOCKHOLM, v100);
+    const e1 = HandlingEvent(cargo, t1, t1, HandlingEventType.RECEIVE, HONGKONG);
+    const e2 = HandlingEvent(cargo, t2, t2, HandlingEventType.LOAD, HONGKONG, v100);
+    const e3 = HandlingEvent(cargo, t3, t3, HandlingEventType.UNLOAD, STOCKHOLM, v100);
 
-    const history = new HandlingHistory([e3, e1, e2]); // intentionally unordered
+    const history = HandlingHistory([e3, e1, e2]); // intentionally unordered
     expect(history.mostRecentlyCompletedEvent().type()).toBe(HandlingEventType.UNLOAD);
   });
 
   test('distinctEventsByCompletionTime deduplicates', () => {
     const cargo = makeCargo('DUP01');
     const t = new Date('2009-03-01');
-    const e = new HandlingEvent(cargo, t, t, HandlingEventType.RECEIVE, HONGKONG);
-    const history = new HandlingHistory([e, e]);
+    const e = HandlingEvent(cargo, t, t, HandlingEventType.RECEIVE, HONGKONG);
+    const history = HandlingHistory([e, e]);
     expect(history.distinctEventsByCompletionTime()).toHaveLength(1);
   });
 
@@ -44,9 +44,9 @@ describe('HandlingHistory', () => {
     const cargo = makeCargo('SRT01');
     const t1 = new Date('2009-03-01');
     const t2 = new Date('2009-03-05');
-    const e1 = new HandlingEvent(cargo, t1, t1, HandlingEventType.RECEIVE, HONGKONG);
-    const e2 = new HandlingEvent(cargo, t2, t2, HandlingEventType.LOAD, HONGKONG, v100);
-    const history = new HandlingHistory([e2, e1]);
+    const e1 = HandlingEvent(cargo, t1, t1, HandlingEventType.RECEIVE, HONGKONG);
+    const e2 = HandlingEvent(cargo, t2, t2, HandlingEventType.LOAD, HONGKONG, v100);
+    const history = HandlingHistory([e2, e1]);
     const sorted = history.distinctEventsByCompletionTime();
     expect(sorted[0].type()).toBe(HandlingEventType.RECEIVE);
     expect(sorted[1].type()).toBe(HandlingEventType.LOAD);
@@ -56,10 +56,10 @@ describe('HandlingHistory', () => {
     const cargo1 = makeCargo('AAA11');
     const cargo2 = makeCargo('BBB22');
     const t = new Date('2009-03-01');
-    const e1 = new HandlingEvent(cargo1, t, t, HandlingEventType.RECEIVE, HONGKONG);
-    const e2 = new HandlingEvent(cargo2, t, t, HandlingEventType.RECEIVE, HONGKONG);
-    const history = new HandlingHistory([e1, e2]);
-    const filtered = history.filterOnCargo(new TrackingId('AAA11'));
+    const e1 = HandlingEvent(cargo1, t, t, HandlingEventType.RECEIVE, HONGKONG);
+    const e2 = HandlingEvent(cargo2, t, t, HandlingEventType.RECEIVE, HONGKONG);
+    const history = HandlingHistory([e1, e2]);
+    const filtered = history.filterOnCargo(TrackingId('AAA11'));
     expect(filtered.distinctEventsByCompletionTime()).toHaveLength(1);
     expect(filtered.mostRecentlyCompletedEvent().cargo().trackingId().idString()).toBe('AAA11');
   });

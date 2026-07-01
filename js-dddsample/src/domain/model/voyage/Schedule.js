@@ -1,22 +1,24 @@
 'use strict';
 
-class Schedule {
-  /** @param {CarrierMovement[]} carrierMovements */
-  constructor(carrierMovements) {
-    this._carrierMovements = carrierMovements ? [...carrierMovements] : [];
+/**
+ * Voyage schedule — ordered list of carrier movements.
+ */
+function Schedule(carrierMovements) {
+  if (!carrierMovements) throw new Error('Carrier movements are required');
+  const _movements = [...carrierMovements];
+
+  function carrierMovements_() { return [..._movements]; }
+  function sameValueAs(other) {
+    if (!other || typeof other.carrierMovements !== 'function') return false;
+    const om = other.carrierMovements();
+    if (_movements.length !== om.length) return false;
+    return _movements.every((m, i) => m.equals(om[i]));
   }
+  function equals(other) { return sameValueAs(other); }
 
-  carrierMovements() { return [...this._carrierMovements]; }
-
-  sameValueAs(other) {
-    if (!(other instanceof Schedule)) return false;
-    if (this._carrierMovements.length !== other._carrierMovements.length) return false;
-    return this._carrierMovements.every((m, i) => m.equals(other._carrierMovements[i]));
-  }
-
-  equals(other) { return this.sameValueAs(other); }
+  return { carrierMovements: carrierMovements_, sameValueAs, equals };
 }
 
-Schedule.EMPTY = new Schedule([]);
+Schedule.EMPTY = Schedule([]);
 
 module.exports = Schedule;

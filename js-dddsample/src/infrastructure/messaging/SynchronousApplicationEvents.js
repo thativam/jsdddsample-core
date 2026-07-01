@@ -1,39 +1,35 @@
 'use strict';
 
 /**
- * Synchronous implementation of ApplicationEvents (used in tests).
- * Immediately calls CargoInspectionService when a cargo is handled.
+ * Synchronous ApplicationEvents — top-level independent functions.
+ * Used in unit/scenario tests in place of the async queue.
+ *
+ * The mutable back-reference to CargoInspectionService is held in a plain
+ * ref object created by createRef(), which is injected as the first parameter.
  */
-class SynchronousApplicationEvents {
-  constructor() {
-    this._cargoInspectionService = null;
-  }
 
-  /** @param {import('../../application/CargoInspectionService')} svc */
-  setCargoInspectionService(svc) {
-    this._cargoInspectionService = svc;
-  }
-
-  /** @param {import('../../domain/model/handling/HandlingEvent')} event */
-  cargoWasHandled(event) {
-    this._cargoInspectionService.inspectCargo(event.cargo().trackingId());
-  }
-
-  /** @param {import('../../domain/model/cargo/Cargo')} cargo */
-  cargoWasMisdirected(cargo) {
-    console.warn(`Cargo ${cargo.trackingId()} was misdirected`);
-  }
-
-  /** @param {import('../../domain/model/cargo/Cargo')} cargo */
-  cargoHasArrived(cargo) {
-    console.info(`Cargo ${cargo.trackingId()} has arrived`);
-  }
-
-  /** @param {import('../../interfaces/handling/HandlingReportParser').HandlingEventRegistrationAttempt} attempt */
-  receivedHandlingEventRegistrationAttempt(attempt) {
-    // In a real system this would be async via a message queue.
-    // For tests/demo we process synchronously here.
-  }
+function createRef() {
+  return { cargoInspectionService: null };
 }
 
-module.exports = SynchronousApplicationEvents;
+function setCargoInspectionService(ref, svc) {
+  ref.cargoInspectionService = svc;
+}
+
+function cargoWasHandled(ref, event) {
+  ref.cargoInspectionService.inspectCargo(event.cargo().trackingId());
+}
+
+function cargoWasMisdirected(ref, cargo) {
+  console.warn(`Cargo ${cargo.trackingId()} was misdirected`);
+}
+
+function cargoHasArrived(ref, cargo) {
+  console.info(`Cargo ${cargo.trackingId()} has arrived`);
+}
+
+function receivedHandlingEventRegistrationAttempt(ref, attempt) {
+  // Synchronous no-op — tests call HandlingEventService directly
+}
+
+module.exports = { createRef, setCargoInspectionService, cargoWasHandled, cargoWasMisdirected, cargoHasArrived, receivedHandlingEventRegistrationAttempt };

@@ -4,42 +4,28 @@ const { randomUUID } = require('crypto');
 const TrackingId = require('../../../domain/model/cargo/TrackingId');
 
 /**
- * In-memory Cargo repository (for tests and sample data).
+ * In-memory Cargo repository.
  */
-class CargoRepositoryInMem {
-  constructor() {
-    /** @type {Map<string, import('../../../domain/model/cargo/Cargo')>} */
-    this._store = new Map();
+function CargoRepositoryInMem() {
+  const _store = new Map();
+
+  function find(trackingId) {
+    return _store.get(trackingId.idString()) || null;
   }
 
-  /**
-   * @param {import('../../../domain/model/cargo/TrackingId')} trackingId
-   * @returns {import('../../../domain/model/cargo/Cargo')|null}
-   */
-  find(trackingId) {
-    return this._store.get(trackingId.idString()) || null;
+  function store(cargo) {
+    _store.set(cargo.trackingId().idString(), cargo);
   }
 
-  /**
-   * @param {import('../../../domain/model/cargo/Cargo')} cargo
-   */
-  store(cargo) {
-    this._store.set(cargo.trackingId().idString(), cargo);
+  function getAll() {
+    return [..._store.values()];
   }
 
-  /**
-   * @returns {import('../../../domain/model/cargo/Cargo')[]}
-   */
-  getAll() {
-    return [...this._store.values()];
+  function nextTrackingId() {
+    return TrackingId(randomUUID().replace(/-/g, '').substring(0, 8).toUpperCase());
   }
 
-  /**
-   * @returns {TrackingId}
-   */
-  nextTrackingId() {
-    return new TrackingId(randomUUID().replace(/-/g, '').substring(0, 8).toUpperCase());
-  }
+  return { find, store, getAll, nextTrackingId };
 }
 
 module.exports = CargoRepositoryInMem;

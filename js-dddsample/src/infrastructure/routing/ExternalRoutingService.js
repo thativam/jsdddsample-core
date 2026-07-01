@@ -1,56 +1,52 @@
 'use strict';
 
-const Itinerary = require('../../domain/model/cargo/Itinerary');
-const Leg = require('../../domain/model/cargo/Leg');
+const Itinerary    = require('../../domain/model/cargo/Itinerary');
+const Leg          = require('../../domain/model/cargo/Leg');
 const VoyageNumber = require('../../domain/model/voyage/VoyageNumber');
-const UnLocode = require('../../domain/model/location/UnLocode');
+const UnLocode     = require('../../domain/model/location/UnLocode');
 
 /**
- * Bridges our domain routing service to the graph traversal service (external context boundary).
+ * Anti-corruption layer: translates TransitPath/TransitEdge (pathfinder context)
+ * to Itinerary/Leg (cargo context).
+ *
+ * All functions are top-level; repositories are injected as first parameters.
+ * Helper functions (toLeg, toItinerary) are also top-level with explicit dep params.
+ *
+ * Mirrors ExternalRoutingService.java.
  */
-class ExternalRoutingService {
-  constructor(graphTraversalService, locationRepository, voyageRepository) {
-    this._graphTraversalService = graphTraversalService;
-    this._locationRepository = locationRepository;
-    this._voyageRepository = voyageRepository;
-  }
 
-  /**
-   * @param {import('../../domain/model/cargo/RouteSpecification')} routeSpecification
-   * @returns {Itinerary[]}
-   */
-  fetchRoutesForSpecification(routeSpecification) {
-    const origin = routeSpecification.origin();
-    const destination = routeSpecification.destination();
+function toLeg(voyageRepository, locationRepository, edge) {
+  const voyage    = voyageRepository.find(VoyageNumber(edge.edge));
+  const loadLoc   = locationRepository.find(UnLocode(edge.fromNode));
+  const unloadLoc = locationRepository.find(UnLocode(edge.toNode));
+  if (!voyage || !loadLoc || !unloadLoc) return null;
+  return Leg(voyage, loadLoc, unloadLoc, edge.fromDate, edge.toDate);
+}
 
-    const transitPaths = this._graphTraversalService.findShortestPath(
-      origin.unLocode().idString(),
-      destination.unLocode().idString(),
-      { DEADLINE: routeSpecification.arrivalDeadline().toISOString() }
-    );
-
-    return transitPaths
-      .map(path => this._toItinerary(path))
-      .filter(it => it !== null)
-      .filter(it => routeSpecification.isSatisfiedBy(it));
-  }
-
-  _toItinerary(transitPath) {
-    try {
-      const legs = transitPath.transitEdges.map(edge => this._toLeg(edge));
-      return new Itinerary(legs);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  _toLeg(edge) {
-    const voyage = this._voyageRepository.find(new VoyageNumber(edge.edge));
-    const loadLoc = this._locationRepository.find(new UnLocode(edge.fromNode));
-    const unloadLoc = this._locationRepository.find(new UnLocode(edge.toNode));
-    if (!voyage || !loadLoc || !unloadLoc) return null;
-    return new Leg(voyage, loadLoc, unloadLoc, edge.fromDate, edge.toDate);
+function toItinerary(voyageRepository, locationRepository, transitPath) {
+  try {
+    const legs = transitPath.transitEdges
+      .map(e => toLeg(voyageRepository, locationRepository, e))
+      .filter(Boolean);
+    if (legs.length === 0) return null;
+    return Itinerary(legs);
+  } catch (e) {
+    return null;
   }
 }
 
-module.exports = ExternalRoutingService;
+function fetchRoutesForSpecification(graphTraversalService, locationRepository, voyageRepository, routeSpecification) {
+  const origin      = routeSpecification.origin();
+  const destination = routeSpecification.destination();
+  const transitPaths = graphTraversalService.findShortestPath(
+    origin.unLocode().idString(),
+    destination.unLocode().idString(),
+    { DEADLINE: routeSpecification.arrivalDeadline().toISOString() }
+  );
+  return transitPaths
+    .map(tp => toItinerary(voyageRepository, locationRepository, tp))
+    .filter(it => it !== null)
+    .filter(it => routeSpecification.isSatisfiedBy(it));
+}
+
+module.exports = { fetchRoutesForSpecification };

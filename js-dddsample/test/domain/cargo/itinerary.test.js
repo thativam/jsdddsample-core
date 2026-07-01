@@ -11,20 +11,20 @@ const { HONGKONG, STOCKHOLM, MELBOURNE, NEWYORK, TOKYO } = require('../../../src
 const { v100, v200 } = require('../../../src/infrastructure/sampledata/SampleVoyages');
 
 function makeCargo() {
-  return new Cargo(new TrackingId('TEST1'), new RouteSpecification(HONGKONG, STOCKHOLM, new Date('2009-12-31')));
+  return new Cargo(TrackingId('TEST1'), RouteSpecification(HONGKONG, STOCKHOLM, new Date('2009-12-31')));
 }
 
 // Itinerary: HONGKONG -[v100]-> NEWYORK -[v200]-> STOCKHOLM
 function makeItinerary() {
-  const leg1 = new Leg(v100, HONGKONG, NEWYORK, new Date('2009-03-03'), new Date('2009-03-09'));
-  const leg2 = new Leg(v200, NEWYORK, STOCKHOLM, new Date('2009-03-14'), new Date('2009-03-16'));
-  return new Itinerary([leg1, leg2]);
+  const leg1 = Leg(v100, HONGKONG, NEWYORK, new Date('2009-03-03'), new Date('2009-03-09'));
+  const leg2 = Leg(v200, NEWYORK, STOCKHOLM, new Date('2009-03-14'), new Date('2009-03-16'));
+  return Itinerary([leg1, leg2]);
 }
 
 describe('Itinerary', () => {
   test('requires at least one leg', () => {
-    expect(() => new Itinerary([])).toThrow();
-    expect(() => new Itinerary(null)).toThrow();
+    expect(() => Itinerary([])).toThrow();
+    expect(() => Itinerary(null)).toThrow();
   });
 
   test('initialDepartureLocation returns first leg load location', () => {

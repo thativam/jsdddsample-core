@@ -1,45 +1,31 @@
 'use strict';
 
-const Location = require('../location/Location');
-
 /**
- * A carrier movement is a vessel voyage from one location to another.
+ * A single movement of a carrier between two locations.
  */
-class CarrierMovement {
-  /**
-   * @param {Location} departureLocation
-   * @param {Location} arrivalLocation
-   * @param {Date} departureTime
-   * @param {Date} arrivalTime
-   */
-  constructor(departureLocation, arrivalLocation, departureTime, arrivalTime) {
-    if (!departureLocation || !arrivalLocation || !departureTime || !arrivalTime) {
-      throw new Error('All CarrierMovement fields are required');
-    }
-    this._departureLocation = departureLocation;
-    this._arrivalLocation = arrivalLocation;
-    this._departureTime = departureTime;
-    this._arrivalTime = arrivalTime;
+function CarrierMovement(departureLocation, arrivalLocation, departureTime, arrivalTime) {
+  if (!departureLocation || !arrivalLocation || !departureTime || !arrivalTime) {
+    throw new Error('All CarrierMovement fields are required');
   }
+  const _depTime = departureLocation instanceof Date ? departureTime : new Date(departureTime);
+  const _arrTime = arrivalTime instanceof Date ? arrivalTime : new Date(arrivalTime);
 
-  departureLocation() { return this._departureLocation; }
-  arrivalLocation()   { return this._arrivalLocation; }
-  departureTime()     { return this._departureTime; }
-  arrivalTime()       { return this._arrivalTime; }
+  function departureLocation_() { return departureLocation; }
+  function arrivalLocation_()   { return arrivalLocation; }
+  function departureTime_()     { return _depTime; }
+  function arrivalTime_()       { return _arrTime; }
 
-  sameValueAs(other) {
-    return other instanceof CarrierMovement &&
-      this._departureLocation.equals(other._departureLocation) &&
-      this._arrivalLocation.equals(other._arrivalLocation) &&
-      this._departureTime.getTime() === other._departureTime.getTime() &&
-      this._arrivalTime.getTime() === other._arrivalTime.getTime();
+  function sameValueAs(other) {
+    return other != null &&
+      typeof other.departureLocation === 'function' &&
+      departureLocation.equals(other.departureLocation()) &&
+      arrivalLocation.equals(other.arrivalLocation()) &&
+      _depTime.getTime() === other.departureTime().getTime() &&
+      _arrTime.getTime() === other.arrivalTime().getTime();
   }
+  function equals(other) { return sameValueAs(other); }
 
-  equals(other) { return this.sameValueAs(other); }
+  return { departureLocation: departureLocation_, arrivalLocation: arrivalLocation_, departureTime: departureTime_, arrivalTime: arrivalTime_, sameValueAs, equals };
 }
-
-CarrierMovement.NONE = new CarrierMovement(
-  Location.UNKNOWN, Location.UNKNOWN, new Date(0), new Date(0)
-);
 
 module.exports = CarrierMovement;

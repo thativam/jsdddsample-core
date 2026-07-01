@@ -14,7 +14,7 @@ const ISO_8601_FORMAT = 'yyyy-MM-dd HH:mm';
 
 function parseUnLocode(str) {
   try {
-    return new UnLocode(str);
+    return UnLocode(str);
   } catch (e) {
     throw new Error(`Failed to parse UNLO code: ${str}`);
   }
@@ -22,7 +22,7 @@ function parseUnLocode(str) {
 
 function parseTrackingId(str) {
   try {
-    return new TrackingId(str);
+    return TrackingId(str);
   } catch (e) {
     throw new Error(`Failed to parse trackingId: ${str}`);
   }
@@ -31,7 +31,7 @@ function parseTrackingId(str) {
 function parseVoyageNumber(str) {
   if (!str || !str.trim()) return null;
   try {
-    return new VoyageNumber(str);
+    return VoyageNumber(str);
   } catch (e) {
     throw new Error(`Failed to parse voyage number: ${str}`);
   }

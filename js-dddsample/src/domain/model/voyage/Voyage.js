@@ -1,78 +1,52 @@
 'use strict';
 
-const VoyageNumber = require('./VoyageNumber');
-const Schedule = require('./Schedule');
+const VoyageNumber  = require('./VoyageNumber');
+const Schedule      = require('./Schedule');
 const CarrierMovement = require('./CarrierMovement');
-const Location = require('../location/Location');
 
 /**
- * A Voyage.
+ * A Voyage — aggregate root.
  */
-class Voyage {
-  /**
-   * @param {VoyageNumber} voyageNumber
-   * @param {Schedule} schedule
-   */
-  constructor(voyageNumber, schedule) {
-    if (!voyageNumber) throw new Error('Voyage number is required');
-    if (!schedule) throw new Error('Schedule is required');
-    this._voyageNumber = voyageNumber.idString();
-    this._carrierMovements = schedule.carrierMovements();
+function Voyage(voyageNumber, schedule) {
+  if (!voyageNumber) throw new Error('Voyage number is required');
+  if (!schedule) throw new Error('Schedule is required');
+  const _num       = typeof voyageNumber.idString === 'function' ? voyageNumber.idString() : String(voyageNumber);
+  const _movements = typeof schedule.carrierMovements === 'function' ? schedule.carrierMovements() : [];
+
+  function voyageNumber_()    { return VoyageNumber(_num); }
+  function schedule_()        { return Schedule(_movements); }
+  function sameIdentityAs(other) {
+    return other != null && typeof other.voyageNumber === 'function' && _num === other.voyageNumber().idString();
   }
+  function equals(other)      { return sameIdentityAs(other); }
+  function toString()         { return `Voyage ${_num}`; }
 
-  /** @returns {VoyageNumber} */
-  voyageNumber() { return new VoyageNumber(this._voyageNumber); }
-
-  /** @returns {Schedule} */
-  schedule() { return new Schedule(this._carrierMovements); }
-
-  /** @param {Voyage} other @returns {boolean} */
-  sameIdentityAs(other) {
-    return other instanceof Voyage && this._voyageNumber === other._voyageNumber;
-  }
-
-  equals(other) { return this.sameIdentityAs(other); }
-
-  toString() { return `Voyage ${this._voyageNumber}`; }
+  return { voyageNumber: voyageNumber_, schedule: schedule_, sameIdentityAs, equals, toString };
 }
 
-/** Null object — no voyage */
-Voyage.NONE = new Voyage(new VoyageNumber(''), Schedule.EMPTY);
+Voyage.NONE = Voyage(VoyageNumber(''), Schedule.EMPTY);
 
 /**
- * Builder for incremental construction of a Voyage aggregate.
+ * Builder for constructing Voyage aggregates.
  */
-class VoyageBuilder {
-  /**
-   * @param {VoyageNumber} voyageNumber
-   * @param {Location} departureLocation
-   */
-  constructor(voyageNumber, departureLocation) {
-    if (!voyageNumber) throw new Error('Voyage number is required');
-    if (!departureLocation) throw new Error('Departure location is required');
-    this._voyageNumber = voyageNumber;
-    this._departureLocation = departureLocation;
-    this._carrierMovements = [];
+function VoyageBuilder(voyageNumber, departureLocation) {
+  if (!voyageNumber) throw new Error('Voyage number is required');
+  if (!departureLocation) throw new Error('Departure location is required');
+  const _movements = [];
+  let _lastLocation = departureLocation;
+
+  function addMovement(arrivalLocation, departureTime, arrivalTime) {
+    _movements.push(CarrierMovement(_lastLocation, arrivalLocation, departureTime, arrivalTime));
+    _lastLocation = arrivalLocation;
+    return builder;
   }
 
-  /**
-   * @param {Location} arrivalLocation
-   * @param {Date} departureTime
-   * @param {Date} arrivalTime
-   * @returns {VoyageBuilder}
-   */
-  addMovement(arrivalLocation, departureTime, arrivalTime) {
-    this._carrierMovements.push(
-      new CarrierMovement(this._departureLocation, arrivalLocation, departureTime, arrivalTime)
-    );
-    this._departureLocation = arrivalLocation;
-    return this;
+  function build() {
+    return Voyage(voyageNumber, Schedule(_movements));
   }
 
-  /** @returns {Voyage} */
-  build() {
-    return new Voyage(this._voyageNumber, new Schedule(this._carrierMovements));
-  }
+  const builder = { addMovement, build };
+  return builder;
 }
 
 Voyage.Builder = VoyageBuilder;

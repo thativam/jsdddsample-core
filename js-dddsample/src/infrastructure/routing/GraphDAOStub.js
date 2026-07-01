@@ -5,15 +5,17 @@ const ALL_NODES = [
 ];
 const VOYAGE_NUMBERS = ['0100S','0200T','0300A','0301S','0400S'];
 
-class GraphDAOStub {
-  listAllNodes() {
-    return [...ALL_NODES];
-  }
+/**
+ * Stub for the graph database — top-level pure functions, no factory wrapper.
+ * Returns hardcoded nodes and random voyage numbers.
+ */
 
-  getTransitEdge(from, to) {
-    const i = Math.floor(Math.random() * VOYAGE_NUMBERS.length);
-    return VOYAGE_NUMBERS[i];
-  }
+function listAllNodes() {
+  return [...ALL_NODES];
 }
 
-module.exports = GraphDAOStub;
+function getTransitEdge(from, to) {
+  return VOYAGE_NUMBERS[Math.floor(Math.random() * VOYAGE_NUMBERS.length)];
+}
+
+module.exports = { listAllNodes, getTransitEdge };

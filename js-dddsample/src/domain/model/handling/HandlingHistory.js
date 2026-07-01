@@ -1,56 +1,42 @@
 'use strict';
 
 /**
- * The handling history of a cargo — an ordered list of handling events.
+ * Handling history — ordered collection of handling events for a cargo.
  */
-class HandlingHistory {
-  /** @param {import('./HandlingEvent')[]} handlingEvents */
-  constructor(handlingEvents) {
-    if (!handlingEvents) throw new Error('Handling events are required');
-    this._handlingEvents = [...handlingEvents];
-  }
+function HandlingHistory(handlingEvents) {
+  if (!handlingEvents) throw new Error('Handling events are required');
+  const _events = [...handlingEvents];
 
-  /**
-   * Distinct events (deduplicated) ordered by completion time.
-   * @returns {import('./HandlingEvent')[]}
-   */
-  distinctEventsByCompletionTime() {
-    // Deduplicate using sameEventAs
+  function distinctEventsByCompletionTime() {
     const unique = [];
-    for (const ev of this._handlingEvents) {
+    for (const ev of _events) {
       if (!unique.some(u => u.sameEventAs(ev))) unique.push(ev);
     }
     return unique.sort((a, b) => a.completionTime().getTime() - b.completionTime().getTime());
   }
 
-  /**
-   * @returns {import('./HandlingEvent')|null}
-   */
-  mostRecentlyCompletedEvent() {
-    const distinct = this.distinctEventsByCompletionTime();
+  function mostRecentlyCompletedEvent() {
+    const distinct = distinctEventsByCompletionTime();
     return distinct.length === 0 ? null : distinct[distinct.length - 1];
   }
 
-  /**
-   * @param {import('../cargo/TrackingId')} trackingId
-   * @returns {HandlingHistory}
-   */
-  filterOnCargo(trackingId) {
-    const filtered = this._handlingEvents.filter(
-      ev => ev.cargo().trackingId().sameValueAs(trackingId)
-    );
-    return new HandlingHistory(filtered);
+  function filterOnCargo(trackingId) {
+    const filtered = _events.filter(ev => ev.cargo().trackingId().sameValueAs(trackingId));
+    return HandlingHistory(filtered);
   }
 
-  sameValueAs(other) {
-    if (!(other instanceof HandlingHistory)) return false;
-    if (this._handlingEvents.length !== other._handlingEvents.length) return false;
-    return this._handlingEvents.every((e, i) => e.equals(other._handlingEvents[i]));
+  function sameValueAs(other) {
+    if (!other || typeof other.distinctEventsByCompletionTime !== 'function') return false;
+    const oe = other.distinctEventsByCompletionTime();
+    const te = distinctEventsByCompletionTime();
+    if (te.length !== oe.length) return false;
+    return te.every((e, i) => e.equals(oe[i]));
   }
+  function equals(other) { return sameValueAs(other); }
 
-  equals(other) { return this.sameValueAs(other); }
+  return { distinctEventsByCompletionTime, mostRecentlyCompletedEvent, filterOnCargo, sameValueAs, equals };
 }
 
-HandlingHistory.EMPTY = new HandlingHistory([]);
+HandlingHistory.EMPTY = HandlingHistory([]);
 
 module.exports = HandlingHistory;

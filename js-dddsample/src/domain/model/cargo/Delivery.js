@@ -1,76 +1,22 @@
 'use strict';
 
-const RoutingStatus = require('./RoutingStatus');
-const TransportStatus = require('./TransportStatus');
-const HandlingActivity = require('./HandlingActivity');
-const Location = require('../location/Location');
-const Voyage = require('../voyage/Voyage');
+const RoutingStatus     = require('./RoutingStatus');
+const TransportStatus   = require('./TransportStatus');
+const HandlingActivity  = require('./HandlingActivity');
+const Location          = require('../location/Location');
+const Voyage            = require('../voyage/Voyage');
 const HandlingEventType = require('../handling/HandlingEventType');
 
 /**
- * The actual transportation state of the cargo.
- * Derived from the route specification, itinerary and handling history.
+ * The actual transportation state of the cargo — immutable value object.
+ * Re-derived from (lastEvent + itinerary + routeSpec) on every state change.
  */
-class Delivery {
-  /**
-   * @param {import('../handling/HandlingEvent')|null} lastEvent
-   * @param {import('./Itinerary')|null} itinerary
-   * @param {import('./RouteSpecification')} routeSpecification
-   */
-  constructor(lastEvent, itinerary, routeSpecification) {
-    this._calculatedAt = new Date();
-    this._lastEvent = lastEvent;
+function Delivery(lastEvent, itinerary, routeSpecification) {
 
-    this._misdirected = this._calculateMisdirectionStatus(itinerary);
-    this._routingStatus = this._calculateRoutingStatus(itinerary, routeSpecification);
-    this._transportStatus = this._calculateTransportStatus();
-    this._lastKnownLocation = this._calculateLastKnownLocation();
-    this._currentVoyage = this._calculateCurrentVoyage();
-    this._eta = this._calculateEta(itinerary);
-    this._nextExpectedActivity = this._calculateNextExpectedActivity(routeSpecification, itinerary);
-    this._isUnloadedAtDestination = this._calculateUnloadedAtDestination(routeSpecification);
-  }
-
-  /**
-   * Factory: create delivery when routing changes (no new handling).
-   * @param {import('./RouteSpecification')} routeSpec
-   * @param {import('./Itinerary')|null} itinerary
-   * @returns {Delivery}
-   */
-  updateOnRouting(routeSpec, itinerary) {
-    if (!routeSpec) throw new Error('Route specification is required');
-    return new Delivery(this._lastEvent, itinerary, routeSpec);
-  }
-
-  /**
-   * Factory: create from full handling history.
-   * @param {import('./RouteSpecification')} routeSpec
-   * @param {import('./Itinerary')|null} itinerary
-   * @param {import('../handling/HandlingHistory')} handlingHistory
-   * @returns {Delivery}
-   */
-  static derivedFrom(routeSpec, itinerary, handlingHistory) {
-    if (!routeSpec) throw new Error('Route specification is required');
-    if (!handlingHistory) throw new Error('Handling history is required');
-    const lastEvent = handlingHistory.mostRecentlyCompletedEvent();
-    return new Delivery(lastEvent, itinerary, routeSpec);
-  }
-
-  transportStatus()          { return this._transportStatus; }
-  lastKnownLocation()        { return this._lastKnownLocation || Location.UNKNOWN; }
-  currentVoyage()            { return this._currentVoyage || Voyage.NONE; }
-  isMisdirected()            { return this._misdirected; }
-  estimatedTimeOfArrival()   { return this._eta || null; }
-  nextExpectedActivity()     { return this._nextExpectedActivity || null; }
-  isUnloadedAtDestination()  { return this._isUnloadedAtDestination; }
-  routingStatus()            { return this._routingStatus; }
-  calculatedAt()             { return this._calculatedAt; }
-
-  // ---- internal calculations ----
-
-  _calculateTransportStatus() {
-    if (!this._lastEvent) return TransportStatus.NOT_RECEIVED;
-    switch (this._lastEvent.type()) {
+  // ── internal derivation ───────────────────────────────────────────────────
+  function calcTransportStatus() {
+    if (!lastEvent) return TransportStatus.NOT_RECEIVED;
+    switch (lastEvent.type()) {
       case HandlingEventType.LOAD:    return TransportStatus.ONBOARD_CARRIER;
       case HandlingEventType.UNLOAD:
       case HandlingEventType.RECEIVE:
@@ -80,94 +26,119 @@ class Delivery {
     }
   }
 
-  _calculateLastKnownLocation() {
-    return this._lastEvent ? this._lastEvent.location() : null;
+  function calcLastKnownLocation() {
+    return lastEvent ? lastEvent.location() : null;
   }
 
-  _calculateCurrentVoyage() {
-    if (this._calculateTransportStatus() === TransportStatus.ONBOARD_CARRIER && this._lastEvent) {
-      return this._lastEvent.voyage();
+  function calcCurrentVoyage() {
+    return (_transportStatus === TransportStatus.ONBOARD_CARRIER && lastEvent)
+      ? lastEvent.voyage() : null;
+  }
+
+  function calcMisdirected() {
+    if (!lastEvent || !itinerary) return false;
+    return !itinerary.isExpected(lastEvent);
+  }
+
+  function calcRoutingStatus() {
+    if (!itinerary) return RoutingStatus.NOT_ROUTED;
+    return routeSpecification.isSatisfiedBy(itinerary) ? RoutingStatus.ROUTED : RoutingStatus.MISROUTED;
+  }
+
+  const _transportStatus = calcTransportStatus();
+  const _misdirected     = calcMisdirected();
+  const _routingStatus   = calcRoutingStatus();
+  const _calculatedAt    = new Date();
+  const _lastKnown       = calcLastKnownLocation();
+  const _currentVoyage   = calcCurrentVoyage();
+
+  function onTrack() {
+    return _routingStatus === RoutingStatus.ROUTED && !_misdirected;
+  }
+
+  function calcEta() {
+    return onTrack() ? itinerary.finalArrivalDate() : null;
+  }
+
+  function calcNextExpectedActivity() {
+    if (!onTrack()) return null;
+    if (!lastEvent) {
+      return HandlingActivity(HandlingEventType.RECEIVE, routeSpecification.origin());
     }
-    return null;
-  }
-
-  _calculateMisdirectionStatus(itinerary) {
-    if (!this._lastEvent || !itinerary) return false;
-    return !itinerary.isExpected(this._lastEvent);
-  }
-
-  _calculateEta(itinerary) {
-    if (this._onTrack()) return itinerary.finalArrivalDate();
-    return null;
-  }
-
-  _calculateNextExpectedActivity(routeSpec, itinerary) {
-    if (!this._onTrack()) return null;
-
-    if (!this._lastEvent) {
-      return new HandlingActivity(HandlingEventType.RECEIVE, routeSpec.origin());
-    }
-
     const legs = itinerary.legs();
-    switch (this._lastEvent.type()) {
+    switch (lastEvent.type()) {
       case HandlingEventType.LOAD: {
         for (const leg of legs) {
-          if (leg.loadLocation().sameIdentityAs(this._lastEvent.location())) {
-            return new HandlingActivity(HandlingEventType.UNLOAD, leg.unloadLocation(), leg.voyage());
+          if (leg.loadLocation().sameIdentityAs(lastEvent.location())) {
+            return HandlingActivity(HandlingEventType.UNLOAD, leg.unloadLocation(), leg.voyage());
           }
         }
         return null;
       }
-
       case HandlingEventType.UNLOAD: {
         for (let i = 0; i < legs.length; i++) {
-          if (legs[i].unloadLocation().sameIdentityAs(this._lastEvent.location())) {
+          if (legs[i].unloadLocation().sameIdentityAs(lastEvent.location())) {
             if (i + 1 < legs.length) {
               const next = legs[i + 1];
-              return new HandlingActivity(HandlingEventType.LOAD, next.loadLocation(), next.voyage());
-            } else {
-              return new HandlingActivity(HandlingEventType.CLAIM, legs[i].unloadLocation());
+              return HandlingActivity(HandlingEventType.LOAD, next.loadLocation(), next.voyage());
             }
+            return HandlingActivity(HandlingEventType.CLAIM, legs[i].unloadLocation());
           }
         }
         return null;
       }
-
       case HandlingEventType.RECEIVE: {
         const first = legs[0];
-        return new HandlingActivity(HandlingEventType.LOAD, first.loadLocation(), first.voyage());
+        return HandlingActivity(HandlingEventType.LOAD, first.loadLocation(), first.voyage());
       }
-
       default:
         return null;
     }
   }
 
-  _calculateRoutingStatus(itinerary, routeSpec) {
-    if (!itinerary) return RoutingStatus.NOT_ROUTED;
-    return routeSpec.isSatisfiedBy(itinerary) ? RoutingStatus.ROUTED : RoutingStatus.MISROUTED;
+  function calcUnloadedAtDestination() {
+    return lastEvent != null &&
+      lastEvent.type() === HandlingEventType.UNLOAD &&
+      routeSpecification.destination().sameIdentityAs(lastEvent.location());
   }
 
-  _calculateUnloadedAtDestination(routeSpec) {
-    return this._lastEvent !== null &&
-      this._lastEvent !== undefined &&
-      this._lastEvent.type() === HandlingEventType.UNLOAD &&
-      routeSpec.destination().sameIdentityAs(this._lastEvent.location());
+  const _eta                  = calcEta();
+  const _nextExpectedActivity = calcNextExpectedActivity();
+  const _isUnloadedAtDest     = calcUnloadedAtDestination();
+
+  // ── public API ────────────────────────────────────────────────────────────
+  function transportStatus()        { return _transportStatus; }
+  function lastKnownLocation()      { return _lastKnown || Location.UNKNOWN; }
+  function currentVoyage()          { return _currentVoyage || Voyage.NONE; }
+  function isMisdirected()          { return _misdirected; }
+  function estimatedTimeOfArrival() { return _eta || null; }
+  function nextExpectedActivity()   { return _nextExpectedActivity || null; }
+  function isUnloadedAtDestination(){ return _isUnloadedAtDest; }
+  function routingStatus()          { return _routingStatus; }
+  function calculatedAt()           { return _calculatedAt; }
+
+  function updateOnRouting(newRouteSpec, newItinerary) {
+    if (!newRouteSpec) throw new Error('Route specification is required');
+    return Delivery(lastEvent, newItinerary, newRouteSpec);
   }
 
-  _onTrack() {
-    return this._routingStatus === RoutingStatus.ROUTED && !this._misdirected;
+  function sameValueAs(other) {
+    if (!other || typeof other.routingStatus !== 'function') return false;
+    return _transportStatus === other.transportStatus() &&
+      _routingStatus === other.routingStatus() &&
+      _misdirected === other.isMisdirected() &&
+      _isUnloadedAtDest === other.isUnloadedAtDestination();
   }
+  function equals(other) { return sameValueAs(other); }
 
-  sameValueAs(other) {
-    if (!(other instanceof Delivery)) return false;
-    return this._transportStatus === other._transportStatus &&
-      this._routingStatus === other._routingStatus &&
-      this._misdirected === other._misdirected &&
-      this._isUnloadedAtDestination === other._isUnloadedAtDestination;
-  }
-
-  equals(other) { return this.sameValueAs(other); }
+  return { transportStatus, lastKnownLocation, currentVoyage, isMisdirected, estimatedTimeOfArrival, nextExpectedActivity, isUnloadedAtDestination, routingStatus, calculatedAt, updateOnRouting, sameValueAs, equals };
 }
+
+Delivery.derivedFrom = function(routeSpec, itinerary, handlingHistory) {
+  if (!routeSpec) throw new Error('Route specification is required');
+  if (!handlingHistory) throw new Error('Handling history is required');
+  const lastEvent = handlingHistory.mostRecentlyCompletedEvent();
+  return Delivery(lastEvent, itinerary, routeSpec);
+};
 
 module.exports = Delivery;

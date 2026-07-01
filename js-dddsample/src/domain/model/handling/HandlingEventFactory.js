@@ -9,59 +9,39 @@ const {
 } = require('./exceptions');
 
 /**
- * Creates HandlingEvent aggregates, resolving cargo, voyage and location from repositories.
+ * Factory for creating HandlingEvent aggregates — all top-level independent functions.
+ * Repositories are injected as first parameters; helper functions are also top-level
+ * and receive their own dependencies as parameters.
  */
-class HandlingEventFactory {
-  /**
-   * @param {import('../cargo/CargoRepository')} cargoRepository
-   * @param {import('../voyage/VoyageRepository')} voyageRepository
-   * @param {import('../location/LocationRepository')} locationRepository
-   */
-  constructor(cargoRepository, voyageRepository, locationRepository) {
-    this._cargoRepository = cargoRepository;
-    this._voyageRepository = voyageRepository;
-    this._locationRepository = locationRepository;
-  }
 
-  /**
-   * @param {Date} registrationTime
-   * @param {Date} completionTime
-   * @param {import('../cargo/TrackingId')} trackingId
-   * @param {import('../voyage/VoyageNumber')|null} voyageNumber
-   * @param {import('../location/UnLocode')} unlocode
-   * @param {{name:string, voyageRequired:boolean}} type
-   * @returns {HandlingEvent}
-   * @throws {CannotCreateHandlingEventException}
-   */
-  createHandlingEvent(registrationTime, completionTime, trackingId, voyageNumber, unlocode, type) {
-    try {
-      const cargo = this._findCargo(trackingId);
-      const voyage = this._findVoyage(voyageNumber);
-      const location = this._findLocation(unlocode);
-      return new HandlingEvent(cargo, completionTime, registrationTime, type, location, voyage || undefined);
-    } catch (e) {
-      throw new CannotCreateHandlingEventException(e);
-    }
-  }
+function findCargo(cargoRepository, trackingId) {
+  const cargo = cargoRepository.find(trackingId);
+  if (!cargo) throw new UnknownCargoException(trackingId);
+  return cargo;
+}
 
-  _findCargo(trackingId) {
-    const cargo = this._cargoRepository.find(trackingId);
-    if (!cargo) throw new UnknownCargoException(trackingId);
-    return cargo;
-  }
+function findVoyage(voyageRepository, voyageNumber) {
+  if (!voyageNumber) return null;
+  const voyage = voyageRepository.find(voyageNumber);
+  if (!voyage) throw new UnknownVoyageException(voyageNumber);
+  return voyage;
+}
 
-  _findVoyage(voyageNumber) {
-    if (!voyageNumber) return null;
-    const voyage = this._voyageRepository.find(voyageNumber);
-    if (!voyage) throw new UnknownVoyageException(voyageNumber);
-    return voyage;
-  }
+function findLocation(locationRepository, unlocode) {
+  const location = locationRepository.find(unlocode);
+  if (!location) throw new UnknownLocationException(unlocode);
+  return location;
+}
 
-  _findLocation(unlocode) {
-    const location = this._locationRepository.find(unlocode);
-    if (!location) throw new UnknownLocationException(unlocode);
-    return location;
+function createHandlingEvent(cargoRepository, voyageRepository, locationRepository, registrationTime, completionTime, trackingId, voyageNumber, unlocode, type) {
+  try {
+    const cargo    = findCargo(cargoRepository, trackingId);
+    const voyage   = findVoyage(voyageRepository, voyageNumber);
+    const location = findLocation(locationRepository, unlocode);
+    return HandlingEvent(cargo, completionTime, registrationTime, type, location, voyage || undefined);
+  } catch (e) {
+    throw new CannotCreateHandlingEventException(e);
   }
 }
 
-module.exports = HandlingEventFactory;
+module.exports = { createHandlingEvent };

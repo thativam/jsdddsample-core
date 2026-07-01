@@ -1,46 +1,33 @@
 'use strict';
 
-const Location = require('../location/Location');
-const Voyage = require('../voyage/Voyage');
-
 /**
  * A single leg of an itinerary.
  */
-class Leg {
-  /**
-   * @param {Voyage} voyage
-   * @param {Location} loadLocation
-   * @param {Location} unloadLocation
-   * @param {Date} loadTime
-   * @param {Date} unloadTime
-   */
-  constructor(voyage, loadLocation, unloadLocation, loadTime, unloadTime) {
-    if (!voyage || !loadLocation || !unloadLocation || !loadTime || !unloadTime) {
-      throw new Error('All Leg fields are required');
-    }
-    this._voyage = voyage;
-    this._loadLocation = loadLocation;
-    this._unloadLocation = unloadLocation;
-    this._loadTime = loadTime instanceof Date ? loadTime : new Date(loadTime);
-    this._unloadTime = unloadTime instanceof Date ? unloadTime : new Date(unloadTime);
+function Leg(voyage, loadLocation, unloadLocation, loadTime, unloadTime) {
+  if (!voyage || !loadLocation || !unloadLocation || !loadTime || !unloadTime) {
+    throw new Error('All Leg fields are required');
   }
+  const _loadTime   = loadTime instanceof Date   ? loadTime   : new Date(loadTime);
+  const _unloadTime = unloadTime instanceof Date ? unloadTime : new Date(unloadTime);
 
-  voyage()          { return this._voyage; }
-  loadLocation()    { return this._loadLocation; }
-  unloadLocation()  { return this._unloadLocation; }
-  loadTime()        { return this._loadTime; }
-  unloadTime()      { return this._unloadTime; }
+  function voyage_()        { return voyage; }
+  function loadLocation_()  { return loadLocation; }
+  function unloadLocation_() { return unloadLocation; }
+  function loadTime_()      { return _loadTime; }
+  function unloadTime_()    { return _unloadTime; }
 
-  sameValueAs(other) {
-    return other instanceof Leg &&
-      this._voyage.equals(other._voyage) &&
-      this._loadLocation.equals(other._loadLocation) &&
-      this._unloadLocation.equals(other._unloadLocation) &&
-      this._loadTime.getTime() === other._loadTime.getTime() &&
-      this._unloadTime.getTime() === other._unloadTime.getTime();
+  function sameValueAs(other) {
+    return other != null &&
+      typeof other.voyage === 'function' &&
+      voyage.equals(other.voyage()) &&
+      loadLocation.equals(other.loadLocation()) &&
+      unloadLocation.equals(other.unloadLocation()) &&
+      _loadTime.getTime()   === other.loadTime().getTime() &&
+      _unloadTime.getTime() === other.unloadTime().getTime();
   }
+  function equals(other) { return sameValueAs(other); }
 
-  equals(other) { return this.sameValueAs(other); }
+  return { voyage: voyage_, loadLocation: loadLocation_, unloadLocation: unloadLocation_, loadTime: loadTime_, unloadTime: unloadTime_, sameValueAs, equals };
 }
 
 module.exports = Leg;

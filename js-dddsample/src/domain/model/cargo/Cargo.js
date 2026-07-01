@@ -1,94 +1,54 @@
 'use strict';
 
 const TrackingId = require('./TrackingId');
-const RouteSpecification = require('./RouteSpecification');
-const Itinerary = require('./Itinerary');
-const Delivery = require('./Delivery');
-const HandlingHistory = require('../handling/HandlingHistory');
+const Delivery   = require('./Delivery');
 
 /**
- * The central class in the domain model — root of the Cargo aggregate.
- *
- * A cargo is identified by a tracking ID and always has an origin and route specification.
- * Between booking and routing it has no itinerary. The itinerary is attached when the cargo
- * is assigned to a route. Delivery status is re-derived whenever routing or handling changes.
+ * Cargo aggregate root.
  */
-class Cargo {
-  /**
-   * @param {TrackingId} trackingId
-   * @param {RouteSpecification} routeSpecification
-   * @param {Itinerary} [itinerary]
-   */
-  constructor(trackingId, routeSpecification, itinerary) {
-    if (!trackingId) throw new Error('Tracking ID is required');
-    if (!routeSpecification) throw new Error('Route specification is required');
+function Cargo(trackingId, routeSpecification, itinerary) {
+  if (!trackingId) throw new Error('Tracking ID is required');
+  if (!routeSpecification) throw new Error('Route specification is required');
 
-    this._trackingId = trackingId.idString();
-    this._origin = routeSpecification.origin();
-    this._routeSpecification = routeSpecification;
-    this._itinerary = itinerary || null;
+  const HandlingHistory = require('../handling/HandlingHistory');
 
-    this._delivery = Delivery.derivedFrom(
-      this._routeSpecification,
-      this._itinerary,
-      HandlingHistory.EMPTY
-    );
+  const _id     = typeof trackingId.idString === 'function' ? trackingId.idString() : String(trackingId);
+  const _origin = routeSpecification.origin();
+
+  let _routeSpec = routeSpecification;
+  let _itinerary = itinerary || null;
+  let _delivery  = Delivery.derivedFrom(_routeSpec, _itinerary, HandlingHistory.EMPTY);
+
+  function trackingId_()         { return TrackingId(_id); }
+  function origin()              { return _origin; }
+  function delivery()            { return _delivery; }
+  function itinerary_()          { return _itinerary; }
+  function routeSpecification_() { return _routeSpec; }
+
+  function specifyNewRoute(newRouteSpec) {
+    if (!newRouteSpec) throw new Error('Route specification is required');
+    _routeSpec = newRouteSpec;
+    _delivery  = _delivery.updateOnRouting(_routeSpec, _itinerary);
   }
 
-  /** @returns {TrackingId} */
-  trackingId() { return new TrackingId(this._trackingId); }
-
-  /** @returns {import('../location/Location')} */
-  origin() { return this._origin; }
-
-  /** @returns {Delivery} */
-  delivery() { return this._delivery; }
-
-  /** @returns {Itinerary|null} */
-  itinerary() { return this._itinerary; }
-
-  /** @returns {RouteSpecification} */
-  routeSpecification() { return this._routeSpecification; }
-
-  /**
-   * Specifies a new route for this cargo.
-   * @param {RouteSpecification} routeSpecification
-   */
-  specifyNewRoute(routeSpecification) {
-    if (!routeSpecification) throw new Error('Route specification is required');
-    this._routeSpecification = routeSpecification;
-    this._delivery = this._delivery.updateOnRouting(this._routeSpecification, this._itinerary);
+  function assignToRoute(newItinerary) {
+    if (!newItinerary) throw new Error('Itinerary is required for assignment');
+    _itinerary = newItinerary;
+    _delivery  = _delivery.updateOnRouting(_routeSpec, _itinerary);
   }
 
-  /**
-   * Attach a new itinerary to this cargo.
-   * @param {Itinerary} itinerary
-   */
-  assignToRoute(itinerary) {
-    if (!itinerary) throw new Error('Itinerary is required for assignment');
-    this._itinerary = itinerary;
-    this._delivery = this._delivery.updateOnRouting(this._routeSpecification, this._itinerary);
+  function deriveDeliveryProgress(handlingHistory) {
+    _delivery = Delivery.derivedFrom(_routeSpec, _itinerary,
+      handlingHistory.filterOnCargo(TrackingId(_id)));
   }
 
-  /**
-   * Re-derive delivery progress from full handling history.
-   * @param {import('../handling/HandlingHistory')} handlingHistory
-   */
-  deriveDeliveryProgress(handlingHistory) {
-    this._delivery = Delivery.derivedFrom(
-      this._routeSpecification,
-      this._itinerary,
-      handlingHistory.filterOnCargo(new TrackingId(this._trackingId))
-    );
+  function sameIdentityAs(other) {
+    return other != null && typeof other.trackingId === 'function' && _id === other.trackingId().idString();
   }
+  function equals(other) { return sameIdentityAs(other); }
+  function toString()    { return _id; }
 
-  sameIdentityAs(other) {
-    return other instanceof Cargo && this._trackingId === other._trackingId;
-  }
-
-  equals(other) { return this.sameIdentityAs(other); }
-
-  toString() { return this._trackingId; }
+  return { trackingId: trackingId_, origin, delivery, itinerary: itinerary_, routeSpecification: routeSpecification_, specifyNewRoute, assignToRoute, deriveDeliveryProgress, sameIdentityAs, equals, toString };
 }
 
 module.exports = Cargo;

@@ -1,51 +1,38 @@
 'use strict';
 
-const { Specification } = require('../../shared/Specification');
-const Location = require('../location/Location');
+const { withCombinators } = require('../../shared/Specification');
 
 /**
- * Route specification — describes where cargo goes and when it must arrive.
- * Also acts as a Specification<Itinerary>.
+ * Route specification — a specification that an itinerary must satisfy.
  */
-class RouteSpecification extends Specification {
-  /**
-   * @param {Location} origin
-   * @param {Location} destination
-   * @param {Date} arrivalDeadline
-   */
-  constructor(origin, destination, arrivalDeadline) {
-    super();
-    if (!origin) throw new Error('Origin is required');
-    if (!destination) throw new Error('Destination is required');
-    if (!arrivalDeadline) throw new Error('Arrival deadline is required');
-    if (origin.sameIdentityAs(destination)) {
-      throw new Error(`Origin and destination can't be the same: ${origin}`);
-    }
-    this._origin = origin;
-    this._destination = destination;
-    this._arrivalDeadline = arrivalDeadline instanceof Date ? arrivalDeadline : new Date(arrivalDeadline);
-  }
+function RouteSpecification(origin, destination, arrivalDeadline) {
+  if (!origin) throw new Error('Origin is required');
+  if (!destination) throw new Error('Destination is required');
+  if (!arrivalDeadline) throw new Error('Arrival deadline is required');
 
-  origin()          { return this._origin; }
-  destination()     { return this._destination; }
-  arrivalDeadline() { return this._arrivalDeadline; }
+  const _deadline = arrivalDeadline instanceof Date ? arrivalDeadline : new Date(arrivalDeadline);
 
-  /** @param {Itinerary} itinerary */
-  isSatisfiedBy(itinerary) {
+  function isSatisfiedBy(itinerary) {
     return itinerary != null &&
-      this._origin.sameIdentityAs(itinerary.initialDepartureLocation()) &&
-      this._destination.sameIdentityAs(itinerary.finalArrivalLocation()) &&
-      this._arrivalDeadline > itinerary.finalArrivalDate();
+      origin.sameIdentityAs(itinerary.initialDepartureLocation()) &&
+      destination.sameIdentityAs(itinerary.finalArrivalLocation()) &&
+      _deadline > itinerary.finalArrivalDate();
   }
 
-  sameValueAs(other) {
-    return other instanceof RouteSpecification &&
-      this._origin.equals(other._origin) &&
-      this._destination.equals(other._destination) &&
-      this._arrivalDeadline.getTime() === other._arrivalDeadline.getTime();
-  }
+  function origin_()          { return origin; }
+  function destination_()     { return destination; }
+  function arrivalDeadline_() { return _deadline; }
 
-  equals(other) { return this.sameValueAs(other); }
+  function sameValueAs(other) {
+    return other != null &&
+      typeof other.origin === 'function' &&
+      origin.sameIdentityAs(other.origin()) &&
+      destination.sameIdentityAs(other.destination()) &&
+      _deadline.getTime() === other.arrivalDeadline().getTime();
+  }
+  function equals(other) { return sameValueAs(other); }
+
+  return withCombinators({ isSatisfiedBy, origin: origin_, destination: destination_, arrivalDeadline: arrivalDeadline_, sameValueAs, equals });
 }
 
 module.exports = RouteSpecification;

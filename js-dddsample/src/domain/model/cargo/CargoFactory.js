@@ -1,34 +1,19 @@
 'use strict';
 
-const Cargo = require('./Cargo');
+const Cargo              = require('./Cargo');
 const RouteSpecification = require('./RouteSpecification');
 
 /**
- * Factory for creating Cargo aggregates.
+ * Factory for creating Cargo aggregates — top-level independent function.
+ * locationRepository and cargoRepository are injected as first parameters.
  */
-class CargoFactory {
-  /**
-   * @param {import('../location/LocationRepository')} locationRepository
-   * @param {import('./CargoRepository')} cargoRepository
-   */
-  constructor(locationRepository, cargoRepository) {
-    this._locationRepository = locationRepository;
-    this._cargoRepository = cargoRepository;
-  }
 
-  /**
-   * @param {import('../location/UnLocode')} originUnLocode
-   * @param {import('../location/UnLocode')} destinationUnLocode
-   * @param {Date} arrivalDeadline
-   * @returns {Cargo}
-   */
-  createCargo(originUnLocode, destinationUnLocode, arrivalDeadline) {
-    const trackingId = this._cargoRepository.nextTrackingId();
-    const origin = this._locationRepository.find(originUnLocode);
-    const destination = this._locationRepository.find(destinationUnLocode);
-    const routeSpec = new RouteSpecification(origin, destination, arrivalDeadline);
-    return new Cargo(trackingId, routeSpec);
-  }
+function createCargo(locationRepository, cargoRepository, originUnLocode, destinationUnLocode, arrivalDeadline) {
+  const trackingId  = cargoRepository.nextTrackingId();
+  const origin      = locationRepository.find(originUnLocode);
+  const destination = locationRepository.find(destinationUnLocode);
+  const routeSpec   = RouteSpecification(origin, destination, arrivalDeadline);
+  return Cargo(trackingId, routeSpec);
 }
 
-module.exports = CargoFactory;
+module.exports = { createCargo };

@@ -4,64 +4,59 @@ const HandlingEventType = require('./HandlingEventType');
 const Voyage = require('../voyage/Voyage');
 
 /**
- * A HandlingEvent records when cargo is handled — loaded, unloaded, received, etc.
- * Root of the HandlingEvent aggregate.
+ * HandlingEvent aggregate root - records an actual handling of cargo.
  */
-class HandlingEvent {
-  /**
-   * Constructor for events that require a voyage (LOAD, UNLOAD).
-   * @param {import('../cargo/Cargo')} cargo
-   * @param {Date} completionTime
-   * @param {Date} registrationTime
-   * @param {{name:string, voyageRequired:boolean}} type
-   * @param {import('../location/Location')} location
-   * @param {import('../voyage/Voyage')} [voyage]
-   */
-  constructor(cargo, completionTime, registrationTime, type, location, voyage) {
-    if (!cargo) throw new Error('Cargo is required');
-    if (!completionTime) throw new Error('Completion time is required');
-    if (!registrationTime) throw new Error('Registration time is required');
-    if (!type) throw new Error('Handling event type is required');
-    if (!location) throw new Error('Location is required');
+function HandlingEvent(cargo, completionTime, registrationTime, type, location, voyage) {
+  if (!cargo) throw new Error('Cargo is required');
+  if (!completionTime) throw new Error('Completion time is required');
+  if (!registrationTime) throw new Error('Registration time is required');
+  if (!type) throw new Error('Handling event type is required');
+  if (!location) throw new Error('Location is required');
 
-    if (type.voyageRequired) {
-      if (!voyage) throw new Error(`Voyage is required for event type ${type.name}`);
-    } else {
-      if (voyage) throw new Error(`Voyage is not allowed with event type ${type.name}`);
-    }
-
-    this._cargo = cargo;
-    this._completionTime = completionTime instanceof Date ? completionTime : new Date(completionTime);
-    this._registrationTime = registrationTime instanceof Date ? registrationTime : new Date(registrationTime);
-    this._type = type;
-    this._location = location;
-    this._voyage = voyage || null;
+  if (type.voyageRequired && !voyage) {
+    throw new Error('Voyage is required for event type ' + type.name);
+  }
+  if (!type.voyageRequired && voyage) {
+    throw new Error('Voyage is not allowed with event type ' + type.name);
   }
 
-  type()             { return this._type; }
-  voyage()           { return this._voyage || Voyage.NONE; }
-  completionTime()   { return this._completionTime; }
-  registrationTime() { return this._registrationTime; }
-  location()         { return this._location; }
-  cargo()            { return this._cargo; }
+  var _completionTime   = completionTime instanceof Date ? completionTime : new Date(completionTime);
+  var _registrationTime = registrationTime instanceof Date ? registrationTime : new Date(registrationTime);
+  var _voyage = voyage || null;
 
-  sameEventAs(other) {
-    return other instanceof HandlingEvent &&
-      this._cargo.sameIdentityAs(other._cargo) &&
-      this._completionTime.getTime() === other._completionTime.getTime() &&
-      this._location.equals(other._location) &&
-      this._type === other._type &&
-      (this._voyage === other._voyage ||
-        (this._voyage && other._voyage && this._voyage.equals(other._voyage)));
-  }
+  var event = {
+    type:             function() { return type; },
+    voyage:           function() { return _voyage || Voyage.NONE; },
+    completionTime:   function() { return _completionTime; },
+    registrationTime: function() { return _registrationTime; },
+    location:         function() { return location; },
+    cargo:            function() { return cargo; },
 
-  equals(other) { return this.sameEventAs(other); }
+    sameEventAs: function(other) {
+      if (other == null || typeof other.cargo !== 'function') return false;
+      if (!cargo.sameIdentityAs(other.cargo())) return false;
+      if (_completionTime.getTime() !== other.completionTime().getTime()) return false;
+      if (!location.equals(other.location())) return false;
+      if (type !== other.type()) return false;
+      // Compare voyage IDs as strings: null and Voyage.NONE both produce ''
+      var myId = _voyage ? _voyage.voyageNumber().idString() : '';
+      var otherV = other.voyage();
+      var otherId = (otherV && typeof otherV.voyageNumber === 'function')
+        ? otherV.voyageNumber().idString()
+        : '';
+      return myId === otherId;
+    },
 
-  toString() {
-    let s = `HandlingEvent[cargo=${this._cargo.trackingId()}, type=${this._type.name}, location=${this._location}, completed=${this._completionTime}`;
-    if (this._voyage) s += `, voyage=${this._voyage.voyageNumber()}`;
-    return s + ']';
-  }
+    equals: function(other) { return this.sameEventAs(other); },
+
+    toString: function() {
+      var s = 'HandlingEvent[cargo=' + cargo.trackingId() + ', type=' + type.name + ', location=' + location + ', completed=' + _completionTime;
+      if (_voyage) s += ', voyage=' + _voyage.voyageNumber();
+      return s + ']';
+    },
+  };
+
+  return event;
 }
 
 HandlingEvent.Type = HandlingEventType;

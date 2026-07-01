@@ -3,19 +3,19 @@
 const Location = require('../../domain/model/location/Location');
 const UnLocode = require('../../domain/model/location/UnLocode');
 
-const HONGKONG  = new Location(new UnLocode('CNHKG'), 'Hongkong');
-const MELBOURNE = new Location(new UnLocode('AUMEL'), 'Melbourne');
-const STOCKHOLM = new Location(new UnLocode('SESTO'), 'Stockholm');
-const HELSINKI  = new Location(new UnLocode('FIHEL'), 'Helsinki');
-const CHICAGO   = new Location(new UnLocode('USCHI'), 'Chicago');
-const TOKYO     = new Location(new UnLocode('JNTKO'), 'Tokyo');
-const HAMBURG   = new Location(new UnLocode('DEHAM'), 'Hamburg');
-const SHANGHAI  = new Location(new UnLocode('CNSHA'), 'Shanghai');
-const ROTTERDAM = new Location(new UnLocode('NLRTM'), 'Rotterdam');
-const GOTHENBURG = new Location(new UnLocode('SEGOT'), 'Göteborg');
-const HANGZHOU  = new Location(new UnLocode('CNHGH'), 'Hangzhou');
-const NEWYORK   = new Location(new UnLocode('USNYC'), 'New York');
-const DALLAS    = new Location(new UnLocode('USDAL'), 'Dallas');
+const HONGKONG  = Location(UnLocode('CNHKG'), 'Hongkong');
+const MELBOURNE = Location(UnLocode('AUMEL'), 'Melbourne');
+const STOCKHOLM = Location(UnLocode('SESTO'), 'Stockholm');
+const HELSINKI  = Location(UnLocode('FIHEL'), 'Helsinki');
+const CHICAGO   = Location(UnLocode('USCHI'), 'Chicago');
+const TOKYO     = Location(UnLocode('JNTKO'), 'Tokyo');
+const HAMBURG   = Location(UnLocode('DEHAM'), 'Hamburg');
+const SHANGHAI  = Location(UnLocode('CNSHA'), 'Shanghai');
+const ROTTERDAM = Location(UnLocode('NLRTM'), 'Rotterdam');
+const GOTHENBURG = Location(UnLocode('SEGOT'), 'Göteborg');
+const HANGZHOU  = Location(UnLocode('CNHGH'), 'Hangzhou');
+const NEWYORK   = Location(UnLocode('USNYC'), 'New York');
+const DALLAS    = Location(UnLocode('USDAL'), 'Dallas');
 
 const ALL = new Map([
   [HONGKONG.unLocode().idString(),  HONGKONG],
