@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node src/server/app.js",
     "test": "jest --testPathPattern=test/ --forceExit",
+    "test:coverage": "jest --testPathPattern=test/ --forceExit --coverage",
     "test:watch": "jest --watch",
     "test:acceptance": "playwright test",
     "test:acceptance:ui": "playwright test --ui"
