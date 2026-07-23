@@ -7,8 +7,7 @@ const UnLocode     = require('../../../domain/model/location/UnLocode');
 
 /**
  * Assembles RouteCandidateDTO from Itinerary and vice versa.
- * Pure top-level functions — no factory wrapper.
- * fromDTO receives repositories as explicit parameters.
+ * fromDTO receives individual lookup callbacks instead of repository objects.
  */
 
 function toDTO(itinerary) {
@@ -23,11 +22,11 @@ function toDTO(itinerary) {
   };
 }
 
-function fromDTO(dto, voyageRepository, locationRepository) {
+function fromDTO(dto, findVoyage, findLocation) {
   const legs = dto.legs.map(legDTO => {
-    const voyage    = voyageRepository.find(VoyageNumber(legDTO.voyageNumber));
-    const loadLoc   = locationRepository.find(UnLocode(legDTO.from));
-    const unloadLoc = locationRepository.find(UnLocode(legDTO.to));
+    const voyage    = findVoyage(VoyageNumber(legDTO.voyageNumber));
+    const loadLoc   = findLocation(UnLocode(legDTO.from));
+    const unloadLoc = findLocation(UnLocode(legDTO.to));
     return Leg(voyage, loadLoc, unloadLoc, new Date(legDTO.loadTime), new Date(legDTO.unloadTime));
   });
   return Itinerary(legs);

@@ -10,34 +10,37 @@ const {
 
 /**
  * Factory for creating HandlingEvent aggregates — all top-level independent functions.
- * Repositories are injected as first parameters; helper functions are also top-level
- * and receive their own dependencies as parameters.
+ * Each helper receives only the individual lookup callback it needs (no repo objects).
+ *
+ *   cargoFindFn   = cargoRepository.find
+ *   voyageFindFn  = voyageRepository.find
+ *   locationFindFn = locationRepository.find
  */
 
-function findCargo(cargoRepository, trackingId) {
-  const cargo = cargoRepository.find(trackingId);
+function findCargo(cargoFindFn, trackingId) {
+  const cargo = cargoFindFn(trackingId);
   if (!cargo) throw new UnknownCargoException(trackingId);
   return cargo;
 }
 
-function findVoyage(voyageRepository, voyageNumber) {
+function findVoyage(voyageFindFn, voyageNumber) {
   if (!voyageNumber) return null;
-  const voyage = voyageRepository.find(voyageNumber);
+  const voyage = voyageFindFn(voyageNumber);
   if (!voyage) throw new UnknownVoyageException(voyageNumber);
   return voyage;
 }
 
-function findLocation(locationRepository, unlocode) {
-  const location = locationRepository.find(unlocode);
+function findLocation(locationFindFn, unlocode) {
+  const location = locationFindFn(unlocode);
   if (!location) throw new UnknownLocationException(unlocode);
   return location;
 }
 
-function createHandlingEvent(cargoRepository, voyageRepository, locationRepository, registrationTime, completionTime, trackingId, voyageNumber, unlocode, type) {
+function createHandlingEvent(cargoFindFn, voyageFindFn, locationFindFn, registrationTime, completionTime, trackingId, voyageNumber, unlocode, type) {
   try {
-    const cargo    = findCargo(cargoRepository, trackingId);
-    const voyage   = findVoyage(voyageRepository, voyageNumber);
-    const location = findLocation(locationRepository, unlocode);
+    const cargo    = findCargo(cargoFindFn, trackingId);
+    const voyage   = findVoyage(voyageFindFn, voyageNumber);
+    const location = findLocation(locationFindFn, unlocode);
     return HandlingEvent(cargo, completionTime, registrationTime, type, location, voyage || undefined);
   } catch (e) {
     throw new CannotCreateHandlingEventException(e);

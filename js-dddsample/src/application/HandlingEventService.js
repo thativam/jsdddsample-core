@@ -2,15 +2,16 @@
 
 /**
  * Handling event application service — top-level independent function.
+ * Receives only the individual callbacks it needs (no complex objects).
  */
 
-function registerHandlingEvent(handlingEventRepository, applicationEvents, handlingEventFactory, completionTime, trackingId, voyageNumber, unLocode, type) {
+function registerHandlingEvent(storeEvent, emitCargoWasHandled, createHandlingEvent, completionTime, trackingId, voyageNumber, unLocode, type) {
   const registrationTime = new Date();
-  const event = handlingEventFactory.createHandlingEvent(
+  const event = createHandlingEvent(
     registrationTime, completionTime, trackingId, voyageNumber, unLocode, type
   );
-  handlingEventRepository.store(event);
-  applicationEvents.cargoWasHandled(event);
+  storeEvent(event);
+  emitCargoWasHandled(event);
   console.info(`Registered handling event: ${event}`);
 }
 

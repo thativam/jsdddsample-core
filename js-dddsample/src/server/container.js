@@ -5,13 +5,13 @@
  *
  * Mirrors Spring's application context / @Bean wiring.
  *
- * Each module now exports top-level independent functions (Spring-style service methods).
- * This file creates the "bean" instances by partially applying their dep parameters,
- * producing objects whose methods require only business arguments — identical to how
- * Spring wires @Autowired constructor deps before exposing the service bean.
+ * Each module exports top-level functions that accept individual callbacks
+ * (not complex objects). This file extracts the specific methods from each
+ * repository/service and binds them as callbacks — equivalent to how Spring
+ * resolves @Autowired constructor parameters before the bean is usable.
  *
- * Repositories are stateful factory calls (their Map/array is the equivalent of
- * a JPA EntityManager — state inherent to the bean, not a separate injection).
+ * Repositories keep their factory pattern (stateful; Map = equivalent of JPA
+ * EntityManager — state intrinsic to the bean, not an injectable dependency).
  */
 
 const CargoRepositoryInMem         = require('../infrastructure/persistence/inmemory/CargoRepositoryInMem');
@@ -19,61 +19,28 @@ const HandlingEventRepositoryInMem = require('../infrastructure/persistence/inme
 const LocationRepositoryInMem      = require('../infrastructure/persistence/inmemory/LocationRepositoryInMem');
 const VoyageRepositoryInMem        = require('../infrastructure/persistence/inmemory/VoyageRepositoryInMem');
 
-const HandlingEventFactory = require('../domain/model/handling/HandlingEventFactory');
-const CargoFactory         = require('../domain/model/cargo/CargoFactory');
+const HandlingEventFactory  = require('../domain/model/handling/HandlingEventFactory');
+const CargoFactory          = require('../domain/model/cargo/CargoFactory');
 
-const BookingService        = require('../application/BookingService');
-const HandlingEventService  = require('../application/HandlingEventService');
+const BookingService         = require('../application/BookingService');
+const HandlingEventService   = require('../application/HandlingEventService');
 const CargoInspectionService = require('../application/CargoInspectionService');
 
-const GraphDAOStub          = require('../infrastructure/routing/GraphDAOStub');
-const GraphTraversalService = require('../infrastructure/routing/GraphTraversalService');
+const GraphDAOStub           = require('../infrastructure/routing/GraphDAOStub');
+const GraphTraversalService  = require('../infrastructure/routing/GraphTraversalService');
 const ExternalRoutingService = require('../infrastructure/routing/ExternalRoutingService');
 
-const BookingServiceFacade  = require('../interfaces/booking/BookingServiceFacade');
-const SampleDataGenerator   = require('../infrastructure/sampledata/SampleDataGenerator');
+const BookingServiceFacade   = require('../interfaces/booking/BookingServiceFacade');
+const SampleDataGenerator    = require('../infrastructure/sampledata/SampleDataGenerator');
 const AsyncApplicationEvents = require('../infrastructure/messaging/AsyncApplicationEvents');
 
 // ── Repositories (stateful — factory creates the bean instance) ──────────────
-const cargoRepository          = CargoRepositoryInMem();
-const handlingEventRepository  = HandlingEventRepositoryInMem();
-const locationRepository       = LocationRepositoryInMem();
-const voyageRepository         = VoyageRepositoryInMem();
+const cargoRepository         = CargoRepositoryInMem();
+const handlingEventRepository = HandlingEventRepositoryInMem();
+const locationRepository      = LocationRepositoryInMem();
+const voyageRepository        = VoyageRepositoryInMem();
 
-// ── Factories (bound to their repos) ─────────────────────────────────────────
-//
-//   Java: @Autowired CargoFactory(locationRepo, cargoRepo)
-//   JS:   bind locationRepository and cargoRepository as first params
-//
-const handlingEventFactory = {
-  createHandlingEvent: (regTime, compTime, trackingId, voyageNum, unlocode, type) =>
-    HandlingEventFactory.createHandlingEvent(cargoRepository, voyageRepository, locationRepository, regTime, compTime, trackingId, voyageNum, unlocode, type),
-};
-
-const cargoFactory = {
-  createCargo: (originUnLocode, destinationUnLocode, arrivalDeadline) =>
-    CargoFactory.createCargo(locationRepository, cargoRepository, originUnLocode, destinationUnLocode, arrivalDeadline),
-};
-
-// ── Routing (Pathfinder bounded context) ─────────────────────────────────────
-//
-//   GraphDAOStub is now a plain module (no factory call) — its functions are
-//   passed directly as the dao object.
-//
-const graphTraversalService = {
-  findShortestPath: (originNode, destinationNode, limitations) =>
-    GraphTraversalService.findShortestPath(GraphDAOStub, originNode, destinationNode, limitations),
-};
-
-const routingService = {
-  fetchRoutesForSpecification: (routeSpecification) =>
-    ExternalRoutingService.fetchRoutesForSpecification(graphTraversalService, locationRepository, voyageRepository, routeSpecification),
-};
-
-// ── Async message queue (mirrors JmsApplicationEventsImpl) ────────────────────
-//
-//   The EventEmitter is the "state" injected into every async-events function.
-//
+// ── Async message queue ───────────────────────────────────────────────────────
 const _emitter = AsyncApplicationEvents.createEmitter();
 const applicationEvents = {
   on:   (event, handler) => AsyncApplicationEvents.on(_emitter, event, handler),
@@ -85,32 +52,78 @@ const applicationEvents = {
   cargoHasArrived:     (cargo) => AsyncApplicationEvents.cargoHasArrived(_emitter, cargo),
 };
 
-// ── Application services (bound — expose same API as before) ─────────────────
+// ── Individual callback bindings ──────────────────────────────────────────────
+//
+// Each arrow function is a named, single-purpose callback — the "wired" form of
+// a specific method from a repository or service.  This is the JS equivalent of
+// Spring resolving @Autowired at startup.
+
+// CargoFactory callbacks
+const boundNextTrackingId = () => cargoRepository.nextTrackingId();
+const boundFindLocationForFactory = (unLocode) => locationRepository.find(unLocode);
+const boundCreateCargo = (originUnLocode, destinationUnLocode, arrivalDeadline) =>
+  CargoFactory.createCargo(boundNextTrackingId, boundFindLocationForFactory, originUnLocode, destinationUnLocode, arrivalDeadline);
+
+// HandlingEventFactory callbacks
+const boundCreateHandlingEvent = (regTime, compTime, trackingId, voyageNum, unlocode, type) =>
+  HandlingEventFactory.createHandlingEvent(
+    cargoRepository.find,
+    voyageRepository.find,
+    locationRepository.find,
+    regTime, compTime, trackingId, voyageNum, unlocode, type
+  );
+
+// Routing callbacks
+const boundFindShortestPath = (originNode, destinationNode, limitations) =>
+  GraphTraversalService.findShortestPath(
+    GraphDAOStub.listAllNodes,
+    GraphDAOStub.getTransitEdge,
+    originNode, destinationNode, limitations
+  );
+
+const boundFetchRoutes = (routeSpecification) =>
+  ExternalRoutingService.fetchRoutesForSpecification(
+    boundFindShortestPath,
+    locationRepository.find,
+    voyageRepository.find,
+    routeSpecification
+  );
+
+// ── Application services (bound — expose same external API as before) ─────────
 const bookingService = {
   bookNewCargo: (originUnLocode, destinationUnLocode, arrivalDeadline) =>
-    BookingService.bookNewCargo(cargoRepository, cargoFactory, originUnLocode, destinationUnLocode, arrivalDeadline),
+    BookingService.bookNewCargo(boundCreateCargo, cargoRepository.store, originUnLocode, destinationUnLocode, arrivalDeadline),
   requestPossibleRoutesForCargo: (trackingId) =>
-    BookingService.requestPossibleRoutesForCargo(cargoRepository, routingService, trackingId),
+    BookingService.requestPossibleRoutesForCargo(cargoRepository.find, boundFetchRoutes, trackingId),
   assignCargoToRoute: (itinerary, trackingId) =>
-    BookingService.assignCargoToRoute(cargoRepository, itinerary, trackingId),
+    BookingService.assignCargoToRoute(cargoRepository.find, cargoRepository.store, itinerary, trackingId),
   changeDestination: (trackingId, unLocode) =>
-    BookingService.changeDestination(cargoRepository, locationRepository, trackingId, unLocode),
+    BookingService.changeDestination(cargoRepository.find, locationRepository.find, cargoRepository.store, trackingId, unLocode),
 };
 
 const handlingEventService = {
   registerHandlingEvent: (completionTime, trackingId, voyageNumber, unLocode, type) =>
-    HandlingEventService.registerHandlingEvent(handlingEventRepository, applicationEvents, handlingEventFactory, completionTime, trackingId, voyageNumber, unLocode, type),
+    HandlingEventService.registerHandlingEvent(
+      handlingEventRepository.store,
+      applicationEvents.cargoWasHandled,
+      boundCreateHandlingEvent,
+      completionTime, trackingId, voyageNumber, unLocode, type
+    ),
 };
 
 const cargoInspectionService = {
   inspectCargo: (trackingId) =>
-    CargoInspectionService.inspectCargo(applicationEvents, cargoRepository, handlingEventRepository, trackingId),
+    CargoInspectionService.inspectCargo(
+      cargoRepository.find,
+      cargoRepository.store,
+      handlingEventRepository.lookupHandlingHistoryOfCargo,
+      applicationEvents.cargoWasMisdirected,
+      applicationEvents.cargoHasArrived,
+      trackingId
+    ),
 };
 
 // ── Wire queue consumers (equivalent to @MessageDriven beans in Java) ─────────
-//
-// Java:  handlingEventQueue  →  HandlingEventRegistrationCommandMDB
-//                              → HandlingEventService.registerHandlingEvent()
 applicationEvents.on('handlingEventQueue', (attempt) => {
   try {
     handlingEventService.registerHandlingEvent(
@@ -125,8 +138,6 @@ applicationEvents.on('handlingEventQueue', (attempt) => {
   }
 });
 
-// Java:  cargoHandledQueue  →  CargoHandledPlacerMDB
-//                            → CargoInspectionService.inspectCargo()
 applicationEvents.on('cargoHandledQueue', (event) => {
   try {
     cargoInspectionService.inspectCargo(event.cargo().trackingId());
@@ -135,36 +146,46 @@ applicationEvents.on('cargoHandledQueue', (event) => {
   }
 });
 
-// Java:  misdirectedCargoQueue  →  MisdirectedCargoMDB (notification)
 applicationEvents.on('misdirectedCargoQueue', (cargo) => {
   console.warn(`[misdirectedCargoQueue] Cargo ${cargo.trackingId().idString()} is misdirected`);
 });
 
-// Java:  deliveredCargoQueue  →  DeliveredCargoMDB (notification)
 applicationEvents.on('deliveredCargoQueue', (cargo) => {
   console.info(`[deliveredCargoQueue] Cargo ${cargo.trackingId().idString()} has arrived at destination`);
 });
 
-// ── Facade (bound — proxies all calls to top-level BookingServiceFacade fns) ─
+// ── Facade (bound — individual callbacks for each operation) ──────────────────
 const bookingServiceFacade = {
   listShippingLocations: () =>
-    BookingServiceFacade.listShippingLocations(locationRepository),
+    BookingServiceFacade.listShippingLocations(locationRepository.getAll),
   bookNewCargo: (origin, destination, arrivalDeadline) =>
-    BookingServiceFacade.bookNewCargo(bookingService, origin, destination, arrivalDeadline),
+    BookingServiceFacade.bookNewCargo(bookingService.bookNewCargo, origin, destination, arrivalDeadline),
   loadCargoForRouting: (trackingId) =>
-    BookingServiceFacade.loadCargoForRouting(cargoRepository, trackingId),
+    BookingServiceFacade.loadCargoForRouting(cargoRepository.find, trackingId),
   assignCargoToRoute: (trackingId, routeDTO) =>
-    BookingServiceFacade.assignCargoToRoute(bookingService, voyageRepository, locationRepository, trackingId, routeDTO),
+    BookingServiceFacade.assignCargoToRoute(
+      bookingService.assignCargoToRoute,
+      voyageRepository.find,
+      locationRepository.find,
+      trackingId, routeDTO
+    ),
   changeDestination: (trackingId, unLocode) =>
-    BookingServiceFacade.changeDestination(bookingService, trackingId, unLocode),
+    BookingServiceFacade.changeDestination(bookingService.changeDestination, trackingId, unLocode),
   listAllCargos: () =>
-    BookingServiceFacade.listAllCargos(cargoRepository),
+    BookingServiceFacade.listAllCargos(cargoRepository.getAll),
   requestPossibleRoutesForCargo: (trackingId) =>
-    BookingServiceFacade.requestPossibleRoutesForCargo(bookingService, trackingId),
+    BookingServiceFacade.requestPossibleRoutesForCargo(bookingService.requestPossibleRoutesForCargo, trackingId),
 };
 
 // ── Sample data ───────────────────────────────────────────────────────────────
-SampleDataGenerator.generate(cargoRepository, voyageRepository, locationRepository, handlingEventRepository);
+SampleDataGenerator.generate(
+  locationRepository.store,
+  voyageRepository.store,
+  cargoRepository.store,
+  handlingEventRepository.store,
+  boundCreateHandlingEvent,
+  handlingEventRepository.lookupHandlingHistoryOfCargo
+);
 
 module.exports = {
   cargoRepository,
@@ -175,6 +196,5 @@ module.exports = {
   handlingEventService,
   cargoInspectionService,
   bookingServiceFacade,
-  handlingEventFactory,
   applicationEvents,
 };

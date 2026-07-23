@@ -6,27 +6,28 @@ const VoyageNumber = require('../../domain/model/voyage/VoyageNumber');
 const UnLocode     = require('../../domain/model/location/UnLocode');
 
 /**
- * Anti-corruption layer: translates TransitPath/TransitEdge (pathfinder context)
- * to Itinerary/Leg (cargo context).
+ * Anti-corruption layer: translates TransitPath/TransitEdge to Itinerary/Leg.
+ * All functions receive individual callbacks instead of repository/service objects.
  *
- * All functions are top-level; repositories are injected as first parameters.
- * Helper functions (toLeg, toItinerary) are also top-level with explicit dep params.
+ *   findShortestPath = graphTraversalService.findShortestPath (bound)
+ *   findVoyage       = voyageRepository.find
+ *   findLocation     = locationRepository.find
  *
  * Mirrors ExternalRoutingService.java.
  */
 
-function toLeg(voyageRepository, locationRepository, edge) {
-  const voyage    = voyageRepository.find(VoyageNumber(edge.edge));
-  const loadLoc   = locationRepository.find(UnLocode(edge.fromNode));
-  const unloadLoc = locationRepository.find(UnLocode(edge.toNode));
+function toLeg(findVoyage, findLocation, edge) {
+  const voyage    = findVoyage(VoyageNumber(edge.edge));
+  const loadLoc   = findLocation(UnLocode(edge.fromNode));
+  const unloadLoc = findLocation(UnLocode(edge.toNode));
   if (!voyage || !loadLoc || !unloadLoc) return null;
   return Leg(voyage, loadLoc, unloadLoc, edge.fromDate, edge.toDate);
 }
 
-function toItinerary(voyageRepository, locationRepository, transitPath) {
+function toItinerary(findVoyage, findLocation, transitPath) {
   try {
     const legs = transitPath.transitEdges
-      .map(e => toLeg(voyageRepository, locationRepository, e))
+      .map(e => toLeg(findVoyage, findLocation, e))
       .filter(Boolean);
     if (legs.length === 0) return null;
     return Itinerary(legs);
@@ -35,16 +36,16 @@ function toItinerary(voyageRepository, locationRepository, transitPath) {
   }
 }
 
-function fetchRoutesForSpecification(graphTraversalService, locationRepository, voyageRepository, routeSpecification) {
+function fetchRoutesForSpecification(findShortestPath, findLocation, findVoyage, routeSpecification) {
   const origin      = routeSpecification.origin();
   const destination = routeSpecification.destination();
-  const transitPaths = graphTraversalService.findShortestPath(
+  const transitPaths = findShortestPath(
     origin.unLocode().idString(),
     destination.unLocode().idString(),
     { DEADLINE: routeSpecification.arrivalDeadline().toISOString() }
   );
   return transitPaths
-    .map(tp => toItinerary(voyageRepository, locationRepository, tp))
+    .map(tp => toItinerary(findVoyage, findLocation, tp))
     .filter(it => it !== null)
     .filter(it => routeSpecification.isSatisfiedBy(it));
 }

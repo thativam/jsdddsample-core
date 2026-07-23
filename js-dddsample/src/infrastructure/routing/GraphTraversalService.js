@@ -2,8 +2,8 @@
 
 /**
  * Graph traversal service — all top-level independent functions.
- * The DAO is injected into findShortestPath as a first parameter.
- * Helper functions (nextDate, randomChunk) are also top-level with no external deps.
+ * findShortestPath receives individual listAllNodes and getTransitEdge callbacks
+ * instead of a DAO object.
  *
  * Mirrors com.pathfinder.internal.GraphTraversalServiceImpl.
  */
@@ -19,8 +19,8 @@ function randomChunk(allNodes) {
   return shuffled.slice(0, chunk);
 }
 
-function findShortestPath(dao, originNode, destinationNode, limitations) {
-  const allVertices = dao.listAllNodes().filter(n => n !== originNode && n !== destinationNode);
+function findShortestPath(listAllNodes, getTransitEdge, originNode, destinationNode, limitations) {
+  const allVertices = listAllNodes().filter(n => n !== originNode && n !== destinationNode);
   const candidateCount = 3 + Math.floor(Math.random() * 3);
   const candidates = [];
 
@@ -34,7 +34,7 @@ function findShortestPath(dao, originNode, destinationNode, limitations) {
       const toNode = j >= chunk.length ? destinationNode : chunk[j];
       const fromDate = nextDate(date);
       const toDate   = nextDate(fromDate);
-      edges.push({ edge: dao.getTransitEdge(fromNode, toNode), fromNode, toNode, fromDate, toDate });
+      edges.push({ edge: getTransitEdge(fromNode, toNode), fromNode, toNode, fromDate, toDate });
       fromNode = toNode;
       date = nextDate(toDate);
     }

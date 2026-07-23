@@ -1,11 +1,10 @@
 'use strict';
 
-const VALID_PATTERN = /^[a-zA-Z]{2}[a-zA-Z2-9]{3}$/;
-
 /**
  * United Nations Location Code — value object.
  */
 function UnLocode(countryAndLocation) {
+  const VALID_PATTERN = /^[a-zA-Z]{2}[a-zA-Z2-9]{3}$/;
   if (!countryAndLocation) throw new Error('Country and location may not be null');
   if (!VALID_PATTERN.test(countryAndLocation)) {
     throw new Error(`${countryAndLocation} is not a valid UN/LOCODE (does not match pattern)`);

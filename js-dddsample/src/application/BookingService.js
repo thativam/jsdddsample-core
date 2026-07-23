@@ -4,38 +4,42 @@ const RouteSpecification = require('../domain/model/cargo/RouteSpecification');
 
 /**
  * Booking application service — top-level independent functions.
- * Dependencies are injected as explicit first parameters (mirrors Spring constructor injection).
+ * Each function receives only the individual callbacks it needs (no complex objects).
+ *
+ *   Java @Autowired CargoRepository  →  individual findCargo / storeCargo callbacks
+ *   Java @Autowired CargoFactory     →  createCargo callback
+ *   Java @Autowired RoutingService   →  fetchRoutes callback
  */
 
-function bookNewCargo(cargoRepository, cargoFactory, originUnLocode, destinationUnLocode, arrivalDeadline) {
-  const cargo = cargoFactory.createCargo(originUnLocode, destinationUnLocode, arrivalDeadline);
-  cargoRepository.store(cargo);
+function bookNewCargo(createCargo, storeCargo, originUnLocode, destinationUnLocode, arrivalDeadline) {
+  const cargo = createCargo(originUnLocode, destinationUnLocode, arrivalDeadline);
+  storeCargo(cargo);
   console.info(`Booked new cargo with tracking id ${cargo.trackingId().idString()}`);
   return cargo.trackingId();
 }
 
-function requestPossibleRoutesForCargo(cargoRepository, routingService, trackingId) {
-  const cargo = cargoRepository.find(trackingId);
+function requestPossibleRoutesForCargo(findCargo, fetchRoutes, trackingId) {
+  const cargo = findCargo(trackingId);
   if (!cargo) return [];
-  return routingService.fetchRoutesForSpecification(cargo.routeSpecification());
+  return fetchRoutes(cargo.routeSpecification());
 }
 
-function assignCargoToRoute(cargoRepository, itinerary, trackingId) {
-  const cargo = cargoRepository.find(trackingId);
+function assignCargoToRoute(findCargo, storeCargo, itinerary, trackingId) {
+  const cargo = findCargo(trackingId);
   if (!cargo) throw new Error(`Can't assign itinerary to non-existing cargo ${trackingId}`);
   cargo.assignToRoute(itinerary);
-  cargoRepository.store(cargo);
+  storeCargo(cargo);
   console.info(`Assigned cargo ${trackingId} to new route`);
 }
 
-function changeDestination(cargoRepository, locationRepository, trackingId, unLocode) {
-  const cargo = cargoRepository.find(trackingId);
-  const newDestination = locationRepository.find(unLocode);
+function changeDestination(findCargo, findLocation, storeCargo, trackingId, unLocode) {
+  const cargo = findCargo(trackingId);
+  const newDestination = findLocation(unLocode);
   const routeSpec = RouteSpecification(
     cargo.origin(), newDestination, cargo.routeSpecification().arrivalDeadline()
   );
   cargo.specifyNewRoute(routeSpec);
-  cargoRepository.store(cargo);
+  storeCargo(cargo);
   console.info(`Changed destination for cargo ${trackingId} to ${routeSpec.destination()}`);
 }
 

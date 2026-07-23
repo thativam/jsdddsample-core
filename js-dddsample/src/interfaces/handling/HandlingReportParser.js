@@ -5,8 +5,6 @@ const UnLocode = require('../../domain/model/location/UnLocode');
 const VoyageNumber = require('../../domain/model/voyage/VoyageNumber');
 const HandlingEventType = require('../../domain/model/handling/HandlingEventType');
 
-const ISO_8601_FORMAT = 'yyyy-MM-dd HH:mm';
-
 /**
  * Utility methods for parsing handling reports.
  * Mirrors HandlingReportParser.java.
@@ -38,6 +36,7 @@ function parseVoyageNumber(str) {
 }
 
 function parseDate(str) {
+  const ISO_8601_FORMAT = 'yyyy-MM-dd HH:mm';
   if (!str) throw new Error(`Invalid date format: ${str}, must be on ISO 8601 format: ${ISO_8601_FORMAT}`);
   try {
     // Accept "yyyy-MM-dd HH:mm" or ISO 8601
@@ -46,7 +45,7 @@ function parseDate(str) {
     if (isNaN(d.getTime())) throw new Error('Invalid date');
     return d;
   } catch (e) {
-    throw new Error(`Invalid date format: ${str}, must be on ISO 8601 format: ${ISO_8601_FORMAT}`);
+    throw new Error(`Invalid date format: ${str}, must be on ISO 8601 format: ${'yyyy-MM-dd HH:mm'}`);
   }
 }
 
@@ -108,4 +107,4 @@ function parseLine(line) {
   return { registrationTime: new Date(), completionTime, trackingId, voyageNumber, type, unLocode };
 }
 
-module.exports = { parse, parseLine, parseUnLocode, parseTrackingId, parseVoyageNumber, parseDate, parseEventType, ISO_8601_FORMAT };
+module.exports = { parse, parseLine, parseUnLocode, parseTrackingId, parseVoyageNumber, parseDate, parseEventType };

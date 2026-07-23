@@ -3,8 +3,6 @@
 const Location = require('../location/Location');
 const HandlingEventType = require('../handling/HandlingEventType');
 
-const END_OF_DAYS = new Date(8640000000000000);
-
 /**
  * An itinerary — ordered list of legs.
  */
@@ -20,7 +18,7 @@ function Itinerary(legs) {
   function legs_() { return [..._legs]; }
   function initialDepartureLocation() { return _legs.length === 0 ? Location.UNKNOWN : _legs[0].loadLocation(); }
   function finalArrivalLocation()     { return _legs.length === 0 ? Location.UNKNOWN : lastLeg().unloadLocation(); }
-  function finalArrivalDate()         { return lastLeg() ? lastLeg().unloadTime() : END_OF_DAYS; }
+  function finalArrivalDate()         { return lastLeg() ? lastLeg().unloadTime() : new Date(8640000000000000); }
 
   function isExpected(event) {
     if (_legs.length === 0) return true;

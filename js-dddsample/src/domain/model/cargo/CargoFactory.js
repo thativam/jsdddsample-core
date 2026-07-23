@@ -5,13 +5,13 @@ const RouteSpecification = require('./RouteSpecification');
 
 /**
  * Factory for creating Cargo aggregates — top-level independent function.
- * locationRepository and cargoRepository are injected as first parameters.
+ * Receives only the individual callbacks it needs: nextTrackingId and findLocation.
  */
 
-function createCargo(locationRepository, cargoRepository, originUnLocode, destinationUnLocode, arrivalDeadline) {
-  const trackingId  = cargoRepository.nextTrackingId();
-  const origin      = locationRepository.find(originUnLocode);
-  const destination = locationRepository.find(destinationUnLocode);
+function createCargo(nextTrackingId, findLocation, originUnLocode, destinationUnLocode, arrivalDeadline) {
+  const trackingId  = nextTrackingId();
+  const origin      = findLocation(originUnLocode);
+  const destination = findLocation(destinationUnLocode);
   const routeSpec   = RouteSpecification(origin, destination, arrivalDeadline);
   return Cargo(trackingId, routeSpec);
 }

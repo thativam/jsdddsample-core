@@ -2,26 +2,26 @@
 
 /**
  * Cargo inspection service — top-level independent function.
- * Re-derives delivery progress after a handling event.
+ * Receives only the individual callbacks it needs (no complex objects).
  */
 
-function inspectCargo(applicationEvents, cargoRepository, handlingEventRepository, trackingId) {
+function inspectCargo(findCargo, storeCargo, lookupHistory, emitMisdirected, emitArrived, trackingId) {
   if (!trackingId) throw new Error('Tracking ID is required');
-  const cargo = cargoRepository.find(trackingId);
+  const cargo = findCargo(trackingId);
   if (!cargo) {
     console.warn(`Can't inspect non-existing cargo ${trackingId}`);
     return;
   }
-  const handlingHistory = handlingEventRepository.lookupHandlingHistoryOfCargo(trackingId);
+  const handlingHistory = lookupHistory(trackingId);
   cargo.deriveDeliveryProgress(handlingHistory);
 
   if (cargo.delivery().isMisdirected()) {
-    applicationEvents.cargoWasMisdirected(cargo);
+    emitMisdirected(cargo);
   }
   if (cargo.delivery().isUnloadedAtDestination()) {
-    applicationEvents.cargoHasArrived(cargo);
+    emitArrived(cargo);
   }
-  cargoRepository.store(cargo);
+  storeCargo(cargo);
 }
 
 module.exports = { inspectCargo };
