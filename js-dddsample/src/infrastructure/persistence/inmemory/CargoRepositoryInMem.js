@@ -4,24 +4,25 @@ const { randomUUID } = require('crypto');
 const TrackingId = require('../../../domain/model/cargo/TrackingId');
 
 /**
- * In-memory Cargo repository.
+ * In-memory Cargo repository — implements CargoRepository port (async).
+ * All methods return Promises so the application layer is driver-agnostic.
  */
 function CargoRepositoryInMem() {
   const _store = new Map();
 
-  function find(trackingId) {
+  async function find(trackingId) {
     return _store.get(trackingId.idString()) || null;
   }
 
-  function store(cargo) {
+  async function store(cargo) {
     _store.set(cargo.trackingId().idString(), cargo);
   }
 
-  function getAll() {
+  async function getAll() {
     return [..._store.values()];
   }
 
-  function nextTrackingId() {
+  async function nextTrackingId() {
     return TrackingId(randomUUID().replace(/-/g, '').substring(0, 8).toUpperCase());
   }
 

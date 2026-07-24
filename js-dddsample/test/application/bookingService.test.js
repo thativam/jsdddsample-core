@@ -9,24 +9,19 @@ const CargoRepositoryInMem   = require('../../src/infrastructure/persistence/inm
 const LocationRepositoryInMem = require('../../src/infrastructure/persistence/inmemory/LocationRepositoryInMem');
 const VoyageRepositoryInMem   = require('../../src/infrastructure/persistence/inmemory/VoyageRepositoryInMem');
 
-const UnLocode     = require('../../src/domain/model/location/UnLocode');
-const TrackingId   = require('../../src/domain/model/cargo/TrackingId');
+const UnLocode      = require('../../src/domain/model/location/UnLocode');
+const TrackingId    = require('../../src/domain/model/cargo/TrackingId');
 const RoutingStatus = require('../../src/domain/model/cargo/RoutingStatus');
-const Itinerary    = require('../../src/domain/model/cargo/Itinerary');
-const Leg          = require('../../src/domain/model/cargo/Leg');
+const Itinerary     = require('../../src/domain/model/cargo/Itinerary');
+const Leg           = require('../../src/domain/model/cargo/Leg');
 const { HONGKONG, STOCKHOLM, HELSINKI } = require('../../src/infrastructure/sampledata/SampleLocations');
 const { v100 }     = require('../../src/infrastructure/sampledata/SampleVoyages');
 
-/**
- * Wire individual callbacks exactly as container.js does, then expose a
- * service object whose methods match the external API callers expect.
- */
 function makeService() {
   const cargoRepo    = CargoRepositoryInMem();
   const locationRepo = LocationRepositoryInMem();
   const voyageRepo   = VoyageRepositoryInMem();
 
-  // Individual callbacks — no complex objects passed to service functions
   const boundCreateCargo = (o, d, dl) =>
     CargoFactory.createCargo(cargoRepo.nextTrackingId, locationRepo.find, o, d, dl);
 
@@ -50,62 +45,62 @@ function makeService() {
 }
 
 describe('BookingService', () => {
-  test('bookNewCargo returns a TrackingId', () => {
+  test('bookNewCargo returns a TrackingId', async () => {
     const { service } = makeService();
-    const trackingId = service.bookNewCargo(
+    const trackingId = await service.bookNewCargo(
       UnLocode('CNHKG'), UnLocode('SESTO'), new Date('2009-12-31')
     );
     expect(trackingId).toBeTruthy();
     expect(trackingId.idString()).toBeTruthy();
   });
 
-  test('booked cargo can be found in repository', () => {
+  test('booked cargo can be found in repository', async () => {
     const { service, cargoRepo } = makeService();
-    const trackingId = service.bookNewCargo(
+    const trackingId = await service.bookNewCargo(
       UnLocode('CNHKG'), UnLocode('SESTO'), new Date('2009-12-31')
     );
-    const cargo = cargoRepo.find(trackingId);
+    const cargo = await cargoRepo.find(trackingId);
     expect(cargo).not.toBeNull();
     expect(cargo.origin().sameIdentityAs(HONGKONG)).toBe(true);
   });
 
-  test('requestPossibleRoutesForCargo returns array', () => {
+  test('requestPossibleRoutesForCargo returns array', async () => {
     const { service } = makeService();
-    const tid = service.bookNewCargo(UnLocode('CNHKG'), UnLocode('SESTO'), new Date('2099-12-31'));
-    const routes = service.requestPossibleRoutesForCargo(tid);
+    const tid = await service.bookNewCargo(UnLocode('CNHKG'), UnLocode('SESTO'), new Date('2099-12-31'));
+    const routes = await service.requestPossibleRoutesForCargo(tid);
     expect(Array.isArray(routes)).toBe(true);
   });
 
-  test('requestPossibleRoutesForCargo returns empty array for unknown cargo', () => {
+  test('requestPossibleRoutesForCargo returns empty array for unknown cargo', async () => {
     const { service } = makeService();
-    const routes = service.requestPossibleRoutesForCargo(TrackingId('NOTEX'));
+    const routes = await service.requestPossibleRoutesForCargo(TrackingId('NOTEX'));
     expect(routes).toHaveLength(0);
   });
 
-  test('assignCargoToRoute sets routing status ROUTED', () => {
+  test('assignCargoToRoute sets routing status ROUTED', async () => {
     const { service, cargoRepo } = makeService();
-    const tid = service.bookNewCargo(UnLocode('CNHKG'), UnLocode('SESTO'), new Date('2009-12-31'));
+    const tid = await service.bookNewCargo(UnLocode('CNHKG'), UnLocode('SESTO'), new Date('2009-12-31'));
     const itinerary = Itinerary([
       Leg(v100, HONGKONG, STOCKHOLM, new Date('2009-03-03'), new Date('2009-03-16')),
     ]);
-    service.assignCargoToRoute(itinerary, tid);
-    const cargo = cargoRepo.find(tid);
+    await service.assignCargoToRoute(itinerary, tid);
+    const cargo = await cargoRepo.find(tid);
     expect(cargo.delivery().routingStatus()).toBe(RoutingStatus.ROUTED);
   });
 
-  test('changeDestination updates route specification', () => {
+  test('changeDestination updates route specification', async () => {
     const { service, cargoRepo } = makeService();
-    const tid = service.bookNewCargo(UnLocode('CNHKG'), UnLocode('SESTO'), new Date('2009-12-31'));
-    service.changeDestination(tid, UnLocode('FIHEL'));
-    const cargo = cargoRepo.find(tid);
+    const tid = await service.bookNewCargo(UnLocode('CNHKG'), UnLocode('SESTO'), new Date('2009-12-31'));
+    await service.changeDestination(tid, UnLocode('FIHEL'));
+    const cargo = await cargoRepo.find(tid);
     expect(cargo.routeSpecification().destination().sameIdentityAs(HELSINKI)).toBe(true);
   });
 
-  test('changeDestination preserves origin', () => {
+  test('changeDestination preserves origin', async () => {
     const { service, cargoRepo } = makeService();
-    const tid = service.bookNewCargo(UnLocode('CNHKG'), UnLocode('SESTO'), new Date('2009-12-31'));
-    service.changeDestination(tid, UnLocode('FIHEL'));
-    const cargo = cargoRepo.find(tid);
+    const tid = await service.bookNewCargo(UnLocode('CNHKG'), UnLocode('SESTO'), new Date('2009-12-31'));
+    await service.changeDestination(tid, UnLocode('FIHEL'));
+    const cargo = await cargoRepo.find(tid);
     expect(cargo.origin().sameIdentityAs(HONGKONG)).toBe(true);
   });
 });

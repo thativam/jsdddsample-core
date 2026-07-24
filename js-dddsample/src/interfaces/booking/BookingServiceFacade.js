@@ -6,45 +6,47 @@ const CargoRoutingDTOAssembler       = require('./assembler/CargoRoutingDTOAssem
 const ItineraryCandidateDTOAssembler = require('./assembler/ItineraryCandidateDTOAssembler');
 
 /**
- * Facade over BookingService for the web/interface layer.
- * Each function receives only the individual callbacks it needs (no complex objects).
+ * Facade over BookingService for the web/interface layer — all functions async.
+ * Each function receives only the individual callbacks it needs.
  */
 
-function listShippingLocations(getAllLocations) {
-  return getAllLocations().map(loc => ({
+async function listShippingLocations(getAllLocations) {
+  const locations = await getAllLocations();
+  return locations.map(loc => ({
     unLocode: loc.unLocode().idString(),
     name: loc.name(),
   }));
 }
 
-function bookNewCargo(bookNewCargoFn, origin, destination, arrivalDeadline) {
-  const trackingId = bookNewCargoFn(
+async function bookNewCargo(bookNewCargoFn, origin, destination, arrivalDeadline) {
+  const trackingId = await bookNewCargoFn(
     UnLocode(origin), UnLocode(destination), arrivalDeadline
   );
   return trackingId.idString();
 }
 
-function loadCargoForRouting(findCargo, trackingId) {
-  const cargo = findCargo(TrackingId(trackingId));
+async function loadCargoForRouting(findCargo, trackingId) {
+  const cargo = await findCargo(TrackingId(trackingId));
   if (!cargo) return null;
   return CargoRoutingDTOAssembler.toDTO(cargo);
 }
 
-function assignCargoToRoute(assignCargoFn, findVoyage, findLocation, trackingIdStr, routeCandidateDTO) {
-  const itinerary = ItineraryCandidateDTOAssembler.fromDTO(routeCandidateDTO, findVoyage, findLocation);
-  assignCargoFn(itinerary, TrackingId(trackingIdStr));
+async function assignCargoToRoute(assignCargoFn, findVoyage, findLocation, trackingIdStr, routeCandidateDTO) {
+  const itinerary = await ItineraryCandidateDTOAssembler.fromDTO(routeCandidateDTO, findVoyage, findLocation);
+  await assignCargoFn(itinerary, TrackingId(trackingIdStr));
 }
 
-function changeDestination(changeDestFn, trackingId, destinationUnLocode) {
-  changeDestFn(TrackingId(trackingId), UnLocode(destinationUnLocode));
+async function changeDestination(changeDestFn, trackingId, destinationUnLocode) {
+  await changeDestFn(TrackingId(trackingId), UnLocode(destinationUnLocode));
 }
 
-function listAllCargos(getAllCargos) {
-  return getAllCargos().map(c => CargoRoutingDTOAssembler.toDTO(c));
+async function listAllCargos(getAllCargos) {
+  const cargos = await getAllCargos();
+  return cargos.map(c => CargoRoutingDTOAssembler.toDTO(c));
 }
 
-function requestPossibleRoutesForCargo(requestRoutesFn, trackingId) {
-  const itineraries = requestRoutesFn(TrackingId(trackingId));
+async function requestPossibleRoutesForCargo(requestRoutesFn, trackingId) {
+  const itineraries = await requestRoutesFn(TrackingId(trackingId));
   return itineraries.map(it => ItineraryCandidateDTOAssembler.toDTO(it));
 }
 

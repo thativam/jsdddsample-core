@@ -1,51 +1,43 @@
 'use strict';
 
 const express = require('express');
-const router = express.Router();
+const router  = express.Router();
 const TrackingId = require('../../domain/model/cargo/TrackingId');
 const CargoTrackingViewAdapter = require('../../interfaces/tracking/CargoTrackingViewAdapter');
 
-/**
- * @param {object} cargoRepository
- * @param {object} handlingEventRepository
- */
 module.exports = function trackingRoutes(cargoRepository, handlingEventRepository) {
 
-  // GET /track?trackingId=... — track a cargo (REST API)
-  router.get('/', (req, res) => {
+  router.get('/', async (req, res) => {
     const { trackingId } = req.query;
     if (!trackingId) {
       return res.status(400).json({ error: 'trackingId query parameter is required' });
     }
-
     try {
       const trkId = TrackingId(trackingId);
-      const cargo = cargoRepository.find(trkId);
+      const [cargo, history] = await Promise.all([
+        cargoRepository.find(trkId),
+        handlingEventRepository.lookupHandlingHistoryOfCargo(trkId),
+      ]);
       if (!cargo) {
         return res.status(404).json({ error: `Unknown tracking id: ${trackingId}` });
       }
-
-      const handlingEvents = handlingEventRepository
-        .lookupHandlingHistoryOfCargo(trkId)
-        .distinctEventsByCompletionTime();
-
+      const handlingEvents = history.distinctEventsByCompletionTime();
       const adapter = CargoTrackingViewAdapter(cargo, handlingEvents);
-
       res.json({
-        trackingId: adapter.getTrackingId(),
-        origin: adapter.getOrigin(),
-        destination: adapter.getDestination(),
-        statusText: adapter.getStatusText(),
-        eta: adapter.getEta(),
+        trackingId:          adapter.getTrackingId(),
+        origin:              adapter.getOrigin(),
+        destination:         adapter.getDestination(),
+        statusText:          adapter.getStatusText(),
+        eta:                 adapter.getEta(),
         nextExpectedActivity: adapter.getNextExpectedActivity(),
-        misdirected: adapter.isMisdirected(),
+        misdirected:         adapter.isMisdirected(),
         events: adapter.getEvents().map(e => ({
-          location: e.getLocation(),
-          time: e.getTime(),
-          type: e.getType(),
+          location:     e.getLocation(),
+          time:         e.getTime(),
+          type:         e.getType(),
           voyageNumber: e.getVoyageNumber(),
-          expected: e.isExpected(),
-          description: e.getDescription(),
+          expected:     e.isExpected(),
+          description:  e.getDescription(),
         })),
       });
     } catch (e) {

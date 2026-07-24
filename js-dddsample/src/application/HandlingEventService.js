@@ -1,17 +1,16 @@
 'use strict';
 
 /**
- * Handling event application service — top-level independent function.
- * Receives only the individual callbacks it needs (no complex objects).
+ * Handling event application service — async top-level function.
  */
 
-function registerHandlingEvent(storeEvent, emitCargoWasHandled, createHandlingEvent, completionTime, trackingId, voyageNumber, unLocode, type) {
+async function registerHandlingEvent(storeEvent, emitCargoWasHandled, createHandlingEvent, completionTime, trackingId, voyageNumber, unLocode, type) {
   const registrationTime = new Date();
-  const event = createHandlingEvent(
+  const event = await createHandlingEvent(
     registrationTime, completionTime, trackingId, voyageNumber, unLocode, type
   );
-  storeEvent(event);
-  emitCargoWasHandled(event);
+  await storeEvent(event);
+  emitCargoWasHandled(event);   // fire-and-forget: event emission is async downstream
   console.info(`Registered handling event: ${event}`);
 }
 

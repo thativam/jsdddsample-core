@@ -4,14 +4,14 @@ const Cargo              = require('./Cargo');
 const RouteSpecification = require('./RouteSpecification');
 
 /**
- * Factory for creating Cargo aggregates — top-level independent function.
- * Receives only the individual callbacks it needs: nextTrackingId and findLocation.
+ * Factory for creating Cargo aggregates — async top-level function.
+ * nextTrackingId and findLocation are async callbacks (repo methods).
  */
 
-function createCargo(nextTrackingId, findLocation, originUnLocode, destinationUnLocode, arrivalDeadline) {
-  const trackingId  = nextTrackingId();
-  const origin      = findLocation(originUnLocode);
-  const destination = findLocation(destinationUnLocode);
+async function createCargo(nextTrackingId, findLocation, originUnLocode, destinationUnLocode, arrivalDeadline) {
+  const trackingId  = await nextTrackingId();
+  const origin      = await findLocation(originUnLocode);
+  const destination = await findLocation(destinationUnLocode);
   const routeSpec   = RouteSpecification(origin, destination, arrivalDeadline);
   return Cargo(trackingId, routeSpec);
 }

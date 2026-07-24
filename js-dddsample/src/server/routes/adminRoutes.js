@@ -1,81 +1,78 @@
 'use strict';
 
 const express = require('express');
-const router = express.Router();
+const router  = express.Router();
 
-/**
- * @param {import('../../interfaces/booking/BookingServiceFacade')} bookingServiceFacade
- */
 module.exports = function adminRoutes(bookingServiceFacade) {
 
-  // GET /admin/registration — show booking form
-  router.get('/registration', (req, res) => {
-    const locations = bookingServiceFacade.listShippingLocations();
-    res.json({ locations });
+  router.get('/registration', async (req, res) => {
+    try {
+      const locations = await bookingServiceFacade.listShippingLocations();
+      res.json({ locations });
+    } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
-  // POST /admin/register — book new cargo
-  router.post('/register', (req, res) => {
+  router.post('/register', async (req, res) => {
     try {
       const { originUnlocode, destinationUnlocode, arrivalDeadline } = req.body;
-      const deadline = new Date(arrivalDeadline);
-      const trackingId = bookingServiceFacade.bookNewCargo(originUnlocode, destinationUnlocode, deadline);
+      const trackingId = await bookingServiceFacade.bookNewCargo(
+        originUnlocode, destinationUnlocode, new Date(arrivalDeadline)
+      );
       res.status(201).json({ trackingId });
-    } catch (e) {
-      res.status(400).json({ error: e.message });
-    }
+    } catch (e) { res.status(400).json({ error: e.message }); }
   });
 
-  // GET /admin/list — list all cargos
-  router.get('/list', (req, res) => {
-    const cargoList = bookingServiceFacade.listAllCargos();
-    res.json({ cargoList });
+  router.get('/list', async (req, res) => {
+    try {
+      const cargoList = await bookingServiceFacade.listAllCargos();
+      res.json({ cargoList });
+    } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
-  // GET /admin/show?trackingId=... — show cargo details
-  router.get('/show', (req, res) => {
-    const { trackingId } = req.query;
-    const cargo = bookingServiceFacade.loadCargoForRouting(trackingId);
-    if (!cargo) return res.status(404).json({ error: 'Cargo not found' });
-    res.json({ cargo });
+  router.get('/show', async (req, res) => {
+    try {
+      const cargo = await bookingServiceFacade.loadCargoForRouting(req.query.trackingId);
+      if (!cargo) return res.status(404).json({ error: 'Cargo not found' });
+      res.json({ cargo });
+    } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
-  // GET /admin/selectItinerary?trackingId=... — list route candidates
-  router.get('/selectItinerary', (req, res) => {
-    const { trackingId } = req.query;
-    const routeCandidates = bookingServiceFacade.requestPossibleRoutesForCargo(trackingId);
-    const cargo = bookingServiceFacade.loadCargoForRouting(trackingId);
-    res.json({ routeCandidates, cargo });
+  router.get('/selectItinerary', async (req, res) => {
+    try {
+      const { trackingId } = req.query;
+      const [routeCandidates, cargo] = await Promise.all([
+        bookingServiceFacade.requestPossibleRoutesForCargo(trackingId),
+        bookingServiceFacade.loadCargoForRouting(trackingId),
+      ]);
+      res.json({ routeCandidates, cargo });
+    } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
-  // POST /admin/assignItinerary — assign a route
-  router.post('/assignItinerary', (req, res) => {
+  router.post('/assignItinerary', async (req, res) => {
     try {
       const { trackingId, itinerary, legs } = req.body;
-      bookingServiceFacade.assignCargoToRoute(trackingId, itinerary || { legs });
+      await bookingServiceFacade.assignCargoToRoute(trackingId, itinerary || { legs });
       res.status(200).json({ trackingId });
-    } catch (e) {
-      res.status(400).json({ error: e.message });
-    }
+    } catch (e) { res.status(400).json({ error: e.message }); }
   });
 
-  // GET /admin/pickNewDestination?trackingId=... — show destination picker
-  router.get('/pickNewDestination', (req, res) => {
-    const { trackingId } = req.query;
-    const locations = bookingServiceFacade.listShippingLocations();
-    const cargo = bookingServiceFacade.loadCargoForRouting(trackingId);
-    res.json({ locations, cargo });
+  router.get('/pickNewDestination', async (req, res) => {
+    try {
+      const { trackingId } = req.query;
+      const [locations, cargo] = await Promise.all([
+        bookingServiceFacade.listShippingLocations(),
+        bookingServiceFacade.loadCargoForRouting(trackingId),
+      ]);
+      res.json({ locations, cargo });
+    } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
-  // POST /admin/changeDestination
-  router.post('/changeDestination', (req, res) => {
+  router.post('/changeDestination', async (req, res) => {
     try {
       const { trackingId, unlocode } = req.body;
-      bookingServiceFacade.changeDestination(trackingId, unlocode);
+      await bookingServiceFacade.changeDestination(trackingId, unlocode);
       res.status(200).json({ trackingId });
-    } catch (e) {
-      res.status(400).json({ error: e.message });
-    }
+    } catch (e) { res.status(400).json({ error: e.message }); }
   });
 
   return router;

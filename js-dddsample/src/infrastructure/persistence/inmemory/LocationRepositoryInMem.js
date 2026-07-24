@@ -3,7 +3,8 @@
 const SampleLocations = require('../../sampledata/SampleLocations');
 
 /**
- * In-memory Location repository seeded with sample locations.
+ * In-memory Location repository — implements LocationRepository port (async).
+ * Pre-seeded with sample locations.
  */
 function LocationRepositoryInMem() {
   const _store = new Map();
@@ -11,15 +12,15 @@ function LocationRepositoryInMem() {
     _store.set(loc.unLocode().idString(), loc);
   }
 
-  function find(unLocode) {
+  async function find(unLocode) {
     return _store.get(unLocode.idString()) || null;
   }
 
-  function getAll() {
+  async function getAll() {
     return [..._store.values()];
   }
 
-  function store(location) {
+  async function store(location) {
     _store.set(location.unLocode().idString(), location);
   }
 

@@ -7,28 +7,24 @@ const UnLocode     = require('../../domain/model/location/UnLocode');
 
 /**
  * Anti-corruption layer: translates TransitPath/TransitEdge to Itinerary/Leg.
- * All functions receive individual callbacks instead of repository/service objects.
- *
- *   findShortestPath = graphTraversalService.findShortestPath (bound)
- *   findVoyage       = voyageRepository.find
- *   findLocation     = locationRepository.find
- *
- * Mirrors ExternalRoutingService.java.
+ * All find callbacks are async (repo methods).
  */
 
-function toLeg(findVoyage, findLocation, edge) {
-  const voyage    = findVoyage(VoyageNumber(edge.edge));
-  const loadLoc   = findLocation(UnLocode(edge.fromNode));
-  const unloadLoc = findLocation(UnLocode(edge.toNode));
+async function toLeg(findVoyage, findLocation, edge) {
+  const [voyage, loadLoc, unloadLoc] = await Promise.all([
+    findVoyage(VoyageNumber(edge.edge)),
+    findLocation(UnLocode(edge.fromNode)),
+    findLocation(UnLocode(edge.toNode)),
+  ]);
   if (!voyage || !loadLoc || !unloadLoc) return null;
   return Leg(voyage, loadLoc, unloadLoc, edge.fromDate, edge.toDate);
 }
 
-function toItinerary(findVoyage, findLocation, transitPath) {
+async function toItinerary(findVoyage, findLocation, transitPath) {
   try {
-    const legs = transitPath.transitEdges
-      .map(e => toLeg(findVoyage, findLocation, e))
-      .filter(Boolean);
+    const legs = (await Promise.all(
+      transitPath.transitEdges.map(e => toLeg(findVoyage, findLocation, e))
+    )).filter(Boolean);
     if (legs.length === 0) return null;
     return Itinerary(legs);
   } catch (e) {
@@ -36,7 +32,7 @@ function toItinerary(findVoyage, findLocation, transitPath) {
   }
 }
 
-function fetchRoutesForSpecification(findShortestPath, findLocation, findVoyage, routeSpecification) {
+async function fetchRoutesForSpecification(findShortestPath, findLocation, findVoyage, routeSpecification) {
   const origin      = routeSpecification.origin();
   const destination = routeSpecification.destination();
   const transitPaths = findShortestPath(
@@ -44,8 +40,10 @@ function fetchRoutesForSpecification(findShortestPath, findLocation, findVoyage,
     destination.unLocode().idString(),
     { DEADLINE: routeSpecification.arrivalDeadline().toISOString() }
   );
-  return transitPaths
-    .map(tp => toItinerary(findVoyage, findLocation, tp))
+  const itineraries = await Promise.all(
+    transitPaths.map(tp => toItinerary(findVoyage, findLocation, tp))
+  );
+  return itineraries
     .filter(it => it !== null)
     .filter(it => routeSpecification.isSatisfiedBy(it));
 }

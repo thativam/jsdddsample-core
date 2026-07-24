@@ -1,18 +1,17 @@
 'use strict';
 
 /**
- * Cargo inspection service — top-level independent function.
- * Receives only the individual callbacks it needs (no complex objects).
+ * Cargo inspection service — async top-level function.
  */
 
-function inspectCargo(findCargo, storeCargo, lookupHistory, emitMisdirected, emitArrived, trackingId) {
+async function inspectCargo(findCargo, storeCargo, lookupHistory, emitMisdirected, emitArrived, trackingId) {
   if (!trackingId) throw new Error('Tracking ID is required');
-  const cargo = findCargo(trackingId);
+  const cargo = await findCargo(trackingId);
   if (!cargo) {
     console.warn(`Can't inspect non-existing cargo ${trackingId}`);
     return;
   }
-  const handlingHistory = lookupHistory(trackingId);
+  const handlingHistory = await lookupHistory(trackingId);
   cargo.deriveDeliveryProgress(handlingHistory);
 
   if (cargo.delivery().isMisdirected()) {
@@ -21,7 +20,7 @@ function inspectCargo(findCargo, storeCargo, lookupHistory, emitMisdirected, emi
   if (cargo.delivery().isUnloadedAtDestination()) {
     emitArrived(cargo);
   }
-  storeCargo(cargo);
+  await storeCargo(cargo);
 }
 
 module.exports = { inspectCargo };

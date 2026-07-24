@@ -9,38 +9,40 @@ const {
 } = require('./exceptions');
 
 /**
- * Factory for creating HandlingEvent aggregates — all top-level independent functions.
+ * Factory for creating HandlingEvent aggregates — all top-level async functions.
  * Each helper receives only the individual lookup callback it needs (no repo objects).
  *
- *   cargoFindFn   = cargoRepository.find
- *   voyageFindFn  = voyageRepository.find
- *   locationFindFn = locationRepository.find
+ *   cargoFindFn    = cargoRepository.find     (async)
+ *   voyageFindFn   = voyageRepository.find    (async)
+ *   locationFindFn = locationRepository.find  (async)
  */
 
-function findCargo(cargoFindFn, trackingId) {
-  const cargo = cargoFindFn(trackingId);
+async function findCargo(cargoFindFn, trackingId) {
+  const cargo = await cargoFindFn(trackingId);
   if (!cargo) throw new UnknownCargoException(trackingId);
   return cargo;
 }
 
-function findVoyage(voyageFindFn, voyageNumber) {
+async function findVoyage(voyageFindFn, voyageNumber) {
   if (!voyageNumber) return null;
-  const voyage = voyageFindFn(voyageNumber);
+  const voyage = await voyageFindFn(voyageNumber);
   if (!voyage) throw new UnknownVoyageException(voyageNumber);
   return voyage;
 }
 
-function findLocation(locationFindFn, unlocode) {
-  const location = locationFindFn(unlocode);
+async function findLocation(locationFindFn, unlocode) {
+  const location = await locationFindFn(unlocode);
   if (!location) throw new UnknownLocationException(unlocode);
   return location;
 }
 
-function createHandlingEvent(cargoFindFn, voyageFindFn, locationFindFn, registrationTime, completionTime, trackingId, voyageNumber, unlocode, type) {
+async function createHandlingEvent(cargoFindFn, voyageFindFn, locationFindFn, registrationTime, completionTime, trackingId, voyageNumber, unlocode, type) {
   try {
-    const cargo    = findCargo(cargoFindFn, trackingId);
-    const voyage   = findVoyage(voyageFindFn, voyageNumber);
-    const location = findLocation(locationFindFn, unlocode);
+    const [cargo, voyage, location] = await Promise.all([
+      findCargo(cargoFindFn, trackingId),
+      findVoyage(voyageFindFn, voyageNumber),
+      findLocation(locationFindFn, unlocode),
+    ]);
     return HandlingEvent(cargo, completionTime, registrationTime, type, location, voyage || undefined);
   } catch (e) {
     throw new CannotCreateHandlingEventException(e);

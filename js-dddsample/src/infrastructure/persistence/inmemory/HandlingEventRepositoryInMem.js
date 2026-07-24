@@ -3,16 +3,16 @@
 const HandlingHistory = require('../../../domain/model/handling/HandlingHistory');
 
 /**
- * In-memory HandlingEvent repository.
+ * In-memory HandlingEvent repository — implements HandlingEventRepository port (async).
  */
 function HandlingEventRepositoryInMem() {
   const _events = [];
 
-  function store(event) {
+  async function store(event) {
     _events.push(event);
   }
 
-  function lookupHandlingHistoryOfCargo(trackingId) {
+  async function lookupHandlingHistoryOfCargo(trackingId) {
     const filtered = _events.filter(e => e.cargo().trackingId().sameValueAs(trackingId));
     return HandlingHistory(filtered);
   }
