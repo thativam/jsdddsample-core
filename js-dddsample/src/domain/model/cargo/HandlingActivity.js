@@ -1,8 +1,3 @@
-'use strict';
-
-/**
- * The next expected handling activity.
- */
 function HandlingActivity(type, location, voyage) {
 
   function type_()     { return type; }
@@ -20,4 +15,4 @@ function HandlingActivity(type, location, voyage) {
   return { type: type_, location: location_, voyage: voyage_, sameValueAs, equals };
 }
 
-module.exports = HandlingActivity;
+export default HandlingActivity;

@@ -1,37 +1,10 @@
-'use strict';
-
-const Cargo              = require('../../../../domain/model/cargo/Cargo');
-const TrackingId         = require('../../../../domain/model/cargo/TrackingId');
-const RouteSpecification = require('../../../../domain/model/cargo/RouteSpecification');
-const Itinerary          = require('../../../../domain/model/cargo/Itinerary');
-const Leg                = require('../../../../domain/model/cargo/Leg');
-const UnLocode           = require('../../../../domain/model/location/UnLocode');
-const VoyageNumber       = require('../../../../domain/model/voyage/VoyageNumber');
-
-/**
- * Converts between Cargo aggregate and MongoDB document.
- *
- * Document shape:
- * {
- *   _id: "ABC12345",                 // TrackingId
- *   originCode: "CNHKG",
- *   routeSpec: {
- *     originCode: "CNHKG",
- *     destCode:   "SESTO",
- *     deadline:   ISODate
- *   },
- *   itinerary: {                     // null if not yet routed
- *     legs: [
- *       { voyageNumber: "V100", from: "CNHKG", to: "USNYC",
- *         loadTime: ISODate, unloadTime: ISODate }
- *     ]
- *   }
- * }
- *
- * Delivery is NOT stored — it is re-derived from the handling history on load.
- * CargoRepositoryMongo.find() calls handlingEventRepo.lookupHandlingHistoryOfCargo()
- * and then cargo.deriveDeliveryProgress(history) before returning the cargo.
- */
+import Cargo              from '../../../../domain/model/cargo/Cargo.js';
+import TrackingId         from '../../../../domain/model/cargo/TrackingId.js';
+import RouteSpecification from '../../../../domain/model/cargo/RouteSpecification.js';
+import Itinerary          from '../../../../domain/model/cargo/Itinerary.js';
+import Leg                from '../../../../domain/model/cargo/Leg.js';
+import UnLocode           from '../../../../domain/model/location/UnLocode.js';
+import VoyageNumber       from '../../../../domain/model/voyage/VoyageNumber.js';
 
 function toDocument(cargo) {
   const itinerary = cargo.itinerary();
@@ -55,23 +28,14 @@ function toDocument(cargo) {
   };
 }
 
-/**
- * @param {object}   doc            - Raw MongoDB document
- * @param {Function} findLocation   - async (UnLocode) => Location
- * @param {Function} findVoyage     - async (VoyageNumber) => Voyage
- * @returns {Promise<Cargo>}
- */
 async function toDomain(doc, findLocation, findVoyage) {
   if (!doc) return null;
-
-  // Reconstruct route specification
   const [origin, destination] = await Promise.all([
     findLocation(UnLocode(doc.routeSpec.originCode)),
     findLocation(UnLocode(doc.routeSpec.destCode)),
   ]);
   const routeSpec = RouteSpecification(origin, destination, new Date(doc.routeSpec.deadline));
 
-  // Reconstruct itinerary (if routed)
   let itinerary = null;
   if (doc.itinerary) {
     const legs = await Promise.all(doc.itinerary.legs.map(async legDoc => {
@@ -88,4 +52,4 @@ async function toDomain(doc, findLocation, findVoyage) {
   return Cargo(TrackingId(doc._id), routeSpec, itinerary);
 }
 
-module.exports = { toDocument, toDomain };
+export { toDocument, toDomain };

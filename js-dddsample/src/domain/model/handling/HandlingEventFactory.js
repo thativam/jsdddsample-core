@@ -1,21 +1,10 @@
-'use strict';
-
-const HandlingEvent = require('./HandlingEvent');
-const {
+import HandlingEvent from './HandlingEvent.js';
+import {
   UnknownCargoException,
   UnknownVoyageException,
   UnknownLocationException,
   CannotCreateHandlingEventException,
-} = require('./exceptions');
-
-/**
- * Factory for creating HandlingEvent aggregates — all top-level async functions.
- * Each helper receives only the individual lookup callback it needs (no repo objects).
- *
- *   cargoFindFn    = cargoRepository.find     (async)
- *   voyageFindFn   = voyageRepository.find    (async)
- *   locationFindFn = locationRepository.find  (async)
- */
+} from './exceptions.js';
 
 async function findCargo(cargoFindFn, trackingId) {
   const cargo = await cargoFindFn(trackingId);
@@ -49,4 +38,4 @@ async function createHandlingEvent(cargoFindFn, voyageFindFn, locationFindFn, re
   }
 }
 
-module.exports = { createHandlingEvent };
+export default { createHandlingEvent };

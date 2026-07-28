@@ -1,24 +1,17 @@
-'use strict';
+import Cargo              from '../../domain/model/cargo/Cargo.js';
+import TrackingId         from '../../domain/model/cargo/TrackingId.js';
+import RouteSpecification from '../../domain/model/cargo/RouteSpecification.js';
+import Itinerary          from '../../domain/model/cargo/Itinerary.js';
+import Leg                from '../../domain/model/cargo/Leg.js';
+import HandlingEvent      from '../../domain/model/handling/HandlingEvent.js';
+import * as SampleLocations from './SampleLocations.js';
+import * as SampleVoyages   from './SampleVoyages.js';
 
-const Cargo              = require('../../domain/model/cargo/Cargo');
-const TrackingId         = require('../../domain/model/cargo/TrackingId');
-const RouteSpecification = require('../../domain/model/cargo/RouteSpecification');
-const Itinerary          = require('../../domain/model/cargo/Itinerary');
-const Leg                = require('../../domain/model/cargo/Leg');
-const HandlingEvent      = require('../../domain/model/handling/HandlingEvent');
-const SampleLocations    = require('./SampleLocations');
-const SampleVoyages      = require('./SampleVoyages');
-
-/**
- * Loads sample data into repositories — now async.
- * All repo callbacks are async (matching the port interface contract).
- */
 async function generate(storeLocation, storeVoyage, storeCargo, storeEvent, createHandlingEvent, lookupHistory) {
   const { toDate } = SampleVoyages;
   const { HONGKONG, HANGZHOU, NEWYORK, DALLAS, HELSINKI, STOCKHOLM } = SampleLocations;
   const { HONGKONG_TO_NEW_YORK, NEW_YORK_TO_DALLAS, DALLAS_TO_HELSINKI } = SampleVoyages;
 
-  // Seed locations and voyages
   await Promise.all(SampleLocations.getAll().map(loc => storeLocation(loc)));
   await Promise.all([
     SampleVoyages.HONGKONG_TO_NEW_YORK,
@@ -66,4 +59,4 @@ async function generate(storeLocation, storeVoyage, storeCargo, storeEvent, crea
   console.info('Sample data loaded.');
 }
 
-module.exports = { generate };
+export { generate };

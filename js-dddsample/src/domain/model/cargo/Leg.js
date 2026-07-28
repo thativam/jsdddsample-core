@@ -1,8 +1,3 @@
-'use strict';
-
-/**
- * A single leg of an itinerary.
- */
 function Leg(voyage, loadLocation, unloadLocation, loadTime, unloadTime) {
   if (!voyage || !loadLocation || !unloadLocation || !loadTime || !unloadTime) {
     throw new Error('All Leg fields are required');
@@ -10,11 +5,11 @@ function Leg(voyage, loadLocation, unloadLocation, loadTime, unloadTime) {
   const _loadTime   = loadTime instanceof Date   ? loadTime   : new Date(loadTime);
   const _unloadTime = unloadTime instanceof Date ? unloadTime : new Date(unloadTime);
 
-  function voyage_()        { return voyage; }
-  function loadLocation_()  { return loadLocation; }
+  function voyage_()         { return voyage; }
+  function loadLocation_()   { return loadLocation; }
   function unloadLocation_() { return unloadLocation; }
-  function loadTime_()      { return _loadTime; }
-  function unloadTime_()    { return _unloadTime; }
+  function loadTime_()       { return _loadTime; }
+  function unloadTime_()     { return _unloadTime; }
 
   function sameValueAs(other) {
     return other != null &&
@@ -30,4 +25,4 @@ function Leg(voyage, loadLocation, unloadLocation, loadTime, unloadTime) {
   return { voyage: voyage_, loadLocation: loadLocation_, unloadLocation: unloadLocation_, loadTime: loadTime_, unloadTime: unloadTime_, sameValueAs, equals };
 }
 
-module.exports = Leg;
+export default Leg;

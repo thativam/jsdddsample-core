@@ -1,15 +1,3 @@
-'use strict';
-
-/**
- * LocationRepository — port interface contract.
- *
- * @interface
- *
- * find(unLocode: UnLocode): Promise<Location|null>
- * store(location: Location): Promise<void>
- * getAll(): Promise<Location[]>
- */
-
 function assertLocationRepository(impl) {
   const required = ['find', 'store', 'getAll'];
   for (const method of required) {
@@ -19,4 +7,4 @@ function assertLocationRepository(impl) {
   }
 }
 
-module.exports = { assertLocationRepository };
+export { assertLocationRepository };

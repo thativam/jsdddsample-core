@@ -1,28 +1,8 @@
-'use strict';
-
-const HandlingEvent     = require('../../../../domain/model/handling/HandlingEvent');
-const HandlingEventType = require('../../../../domain/model/handling/HandlingEventType');
-const TrackingId        = require('../../../../domain/model/cargo/TrackingId');
-const UnLocode          = require('../../../../domain/model/location/UnLocode');
-const VoyageNumber      = require('../../../../domain/model/voyage/VoyageNumber');
-
-/**
- * Converts between HandlingEvent aggregate and MongoDB document.
- *
- * Document shape:
- * {
- *   _id:              ObjectId (auto),
- *   cargoTrackingId:  "ABC12345",
- *   type:             "LOAD",
- *   locationCode:     "CNHKG",
- *   voyageNumber:     "V100" | null,
- *   completionTime:   ISODate,
- *   registrationTime: ISODate
- * }
- *
- * Note: the full Cargo aggregate is NOT embedded — only the trackingId is stored.
- * toDomain requires findCargo, findLocation, findVoyage to reconstruct the object.
- */
+import HandlingEvent     from '../../../../domain/model/handling/HandlingEvent.js';
+import HandlingEventType from '../../../../domain/model/handling/HandlingEventType.js';
+import TrackingId        from '../../../../domain/model/cargo/TrackingId.js';
+import UnLocode          from '../../../../domain/model/location/UnLocode.js';
+import VoyageNumber      from '../../../../domain/model/voyage/VoyageNumber.js';
 
 function toDocument(event) {
   return {
@@ -37,13 +17,6 @@ function toDocument(event) {
   };
 }
 
-/**
- * @param {object}   doc            - Raw MongoDB document
- * @param {Function} findCargo      - async (TrackingId) => Cargo
- * @param {Function} findLocation   - async (UnLocode) => Location
- * @param {Function} findVoyage     - async (VoyageNumber) => Voyage | null
- * @returns {Promise<HandlingEvent>}
- */
 async function toDomain(doc, findCargo, findLocation, findVoyage) {
   if (!doc) return null;
   const type = HandlingEventType[doc.type];
@@ -55,4 +28,4 @@ async function toDomain(doc, findCargo, findLocation, findVoyage) {
   return HandlingEvent(cargo, new Date(doc.completionTime), new Date(doc.registrationTime), type, location, voyage || undefined);
 }
 
-module.exports = { toDocument, toDomain };
+export { toDocument, toDomain };

@@ -1,15 +1,9 @@
-'use strict';
+import express from 'express';
+import { parse } from '../../interfaces/handling/HandlingReportParser.js';
 
-const express = require('express');
-const router = express.Router();
-const { parse } = require('../../interfaces/handling/HandlingReportParser');
+export default function handlingRoutes(applicationEvents) {
+  const router = express.Router();
 
-/**
- * @param {object} applicationEvents
- */
-module.exports = function handlingRoutes(applicationEvents) {
-
-  // POST /handlingReport — submit handling event report
   router.post('/handlingReport', (req, res) => {
     try {
       const attempts = parse(req.body);
@@ -21,4 +15,4 @@ module.exports = function handlingRoutes(applicationEvents) {
   });
 
   return router;
-};
+}

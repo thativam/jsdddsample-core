@@ -1,11 +1,6 @@
-'use strict';
+import HandlingEventType from './HandlingEventType.js';
+import Voyage from '../voyage/Voyage.js';
 
-const HandlingEventType = require('./HandlingEventType');
-const Voyage = require('../voyage/Voyage');
-
-/**
- * HandlingEvent aggregate root - records an actual handling of cargo.
- */
 function HandlingEvent(cargo, completionTime, registrationTime, type, location, voyage) {
   if (!cargo) throw new Error('Cargo is required');
   if (!completionTime) throw new Error('Completion time is required');
@@ -38,7 +33,6 @@ function HandlingEvent(cargo, completionTime, registrationTime, type, location, 
       if (_completionTime.getTime() !== other.completionTime().getTime()) return false;
       if (!location.equals(other.location())) return false;
       if (type !== other.type()) return false;
-      // Compare voyage IDs as strings: null and Voyage.NONE both produce ''
       var myId = _voyage ? _voyage.voyageNumber().idString() : '';
       var otherV = other.voyage();
       var otherId = (otherV && typeof otherV.voyageNumber === 'function')
@@ -61,4 +55,4 @@ function HandlingEvent(cargo, completionTime, registrationTime, type, location, 
 
 HandlingEvent.Type = HandlingEventType;
 
-module.exports = HandlingEvent;
+export default HandlingEvent;

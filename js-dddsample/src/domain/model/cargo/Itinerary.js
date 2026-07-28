@@ -1,11 +1,6 @@
-'use strict';
+import Location from '../location/Location.js';
+import HandlingEventType from '../handling/HandlingEventType.js';
 
-const Location = require('../location/Location');
-const HandlingEventType = require('../handling/HandlingEventType');
-
-/**
- * An itinerary — ordered list of legs.
- */
 function Itinerary(legs) {
   if (!legs) throw new Error('Legs list is required');
   if (legs.length === 0) throw new Error('Itinerary must have at least one leg');
@@ -41,7 +36,7 @@ function Itinerary(legs) {
     if (event.type() === T.CLAIM) {
       return lastLeg().unloadLocation().equals(event.location());
     }
-    return true; // CUSTOMS
+    return true;
   }
 
   function sameValueAs(other) {
@@ -57,4 +52,4 @@ function Itinerary(legs) {
 
 Itinerary.EMPTY_ITINERARY = null;
 
-module.exports = Itinerary;
+export default Itinerary;

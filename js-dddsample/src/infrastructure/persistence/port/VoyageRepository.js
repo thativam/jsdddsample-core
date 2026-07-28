@@ -1,14 +1,3 @@
-'use strict';
-
-/**
- * VoyageRepository — port interface contract.
- *
- * @interface
- *
- * find(voyageNumber: VoyageNumber): Promise<Voyage|null>
- * store(voyage: Voyage): Promise<void>
- */
-
 function assertVoyageRepository(impl) {
   const required = ['find', 'store'];
   for (const method of required) {
@@ -18,4 +7,4 @@ function assertVoyageRepository(impl) {
   }
 }
 
-module.exports = { assertVoyageRepository };
+export { assertVoyageRepository };

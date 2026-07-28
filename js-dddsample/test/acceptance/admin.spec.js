@@ -1,14 +1,12 @@
-'use strict';
-
 /**
  * Admin acceptance tests — mirrors AdminAcceptanceTest.java.
  *
  * Java: @SpringBootTest + MockMvcHtmlUnitDriver
  * JS:   Playwright + Express server (started by webServer in playwright.config.js)
  */
-const { test, expect } = require('@playwright/test');
-const AdminPage = require('./pages/AdminPage');
-const CargoBookingPage = require('./pages/CargoBookingPage');
+import { test, expect } from '@playwright/test';
+import AdminPage from './pages/AdminPage.js';
+import CargoBookingPage from './pages/CargoBookingPage.js';
 
 // ─── adminSiteCargoListContainsCannedCargo ────────────────────────────────────
 test('admin cargo list contains sample cargos ABC123 and JKL567', async ({ page }) => {

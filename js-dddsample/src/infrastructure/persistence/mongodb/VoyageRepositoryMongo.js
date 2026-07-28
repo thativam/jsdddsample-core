@@ -1,16 +1,6 @@
-'use strict';
+import * as VoyageMapper from './mappers/VoyageMapper.js';
 
-const VoyageMapper = require('./mappers/VoyageMapper');
-
-/**
- * MongoDB Voyage repository.
- *
- * @param {import('mongodb').Collection} collection   - db.collection('voyages')
- * @param {Function}                     findLocation  - async (UnLocode) => Location
- *   Required to reconstruct CarrierMovement location objects during toDomain.
- */
 function VoyageRepositoryMongo(collection, findLocation) {
-
   async function find(voyageNumber) {
     const doc = await collection.findOne({ _id: voyageNumber.idString() });
     return VoyageMapper.toDomain(doc, findLocation);
@@ -24,4 +14,4 @@ function VoyageRepositoryMongo(collection, findLocation) {
   return { find, store };
 }
 
-module.exports = VoyageRepositoryMongo;
+export default VoyageRepositoryMongo;

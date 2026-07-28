@@ -1,4 +1,4 @@
-'use strict';
+import CargoDetailsPage from './CargoDetailsPage.js';
 
 /**
  * CargoDestinationPage — Page Object for the change destination form.
@@ -8,7 +8,6 @@ function CargoDestinationPage(page) {
   return {
     /** Select a new destination and submit → CargoDetailsPage */
     async selectDestinationTo(unlocode) {
-      const CargoDetailsPage = require('./CargoDetailsPage');
       // Wait for the locations fetch to populate the dropdown
       await page.waitForFunction(
         () => {
@@ -33,4 +32,4 @@ function CargoDestinationPage(page) {
   };
 }
 
-module.exports = CargoDestinationPage;
+export default CargoDestinationPage;

@@ -1,10 +1,5 @@
-'use strict';
+import UnLocode from './UnLocode.js';
 
-const UnLocode = require('./UnLocode');
-
-/**
- * A location / port of loading or unloading — entity.
- */
 function Location(unLocode, name) {
   const _code = typeof unLocode.idString === 'function' ? unLocode.idString() : String(unLocode);
 
@@ -23,4 +18,4 @@ function Location(unLocode, name) {
 
 Location.UNKNOWN = Location(UnLocode('XXXXX'), 'Unknown location');
 
-module.exports = Location;
+export default Location;

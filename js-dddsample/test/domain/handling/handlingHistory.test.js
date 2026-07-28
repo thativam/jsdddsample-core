@@ -1,13 +1,11 @@
-'use strict';
-
-const HandlingHistory = require('../../../src/domain/model/handling/HandlingHistory');
-const HandlingEvent = require('../../../src/domain/model/handling/HandlingEvent');
-const HandlingEventType = require('../../../src/domain/model/handling/HandlingEventType');
-const Cargo = require('../../../src/domain/model/cargo/Cargo');
-const TrackingId = require('../../../src/domain/model/cargo/TrackingId');
-const RouteSpecification = require('../../../src/domain/model/cargo/RouteSpecification');
-const { HONGKONG, STOCKHOLM, MELBOURNE } = require('../../../src/infrastructure/sampledata/SampleLocations');
-const { v100 } = require('../../../src/infrastructure/sampledata/SampleVoyages');
+import HandlingHistory   from '../../../src/domain/model/handling/HandlingHistory.js';
+import HandlingEvent     from '../../../src/domain/model/handling/HandlingEvent.js';
+import HandlingEventType from '../../../src/domain/model/handling/HandlingEventType.js';
+import Cargo             from '../../../src/domain/model/cargo/Cargo.js';
+import TrackingId        from '../../../src/domain/model/cargo/TrackingId.js';
+import RouteSpecification from '../../../src/domain/model/cargo/RouteSpecification.js';
+import { HONGKONG, STOCKHOLM } from '../../../src/infrastructure/sampledata/SampleLocations.js';
+import { v100 }                from '../../../src/infrastructure/sampledata/SampleVoyages.js';
 
 function makeCargo(id) {
   return Cargo(TrackingId(id), RouteSpecification(HONGKONG, STOCKHOLM, new Date('2009-12-31')));
@@ -28,7 +26,7 @@ describe('HandlingHistory', () => {
     const e2 = HandlingEvent(cargo, t2, t2, HandlingEventType.LOAD, HONGKONG, v100);
     const e3 = HandlingEvent(cargo, t3, t3, HandlingEventType.UNLOAD, STOCKHOLM, v100);
 
-    const history = HandlingHistory([e3, e1, e2]); // intentionally unordered
+    const history = HandlingHistory([e3, e1, e2]);
     expect(history.mostRecentlyCompletedEvent().type()).toBe(HandlingEventType.UNLOAD);
   });
 

@@ -1,12 +1,6 @@
-'use strict';
+import { randomUUID } from 'crypto';
+import TrackingId from '../../../domain/model/cargo/TrackingId.js';
 
-const { randomUUID } = require('crypto');
-const TrackingId = require('../../../domain/model/cargo/TrackingId');
-
-/**
- * In-memory Cargo repository — implements CargoRepository port (async).
- * All methods return Promises so the application layer is driver-agnostic.
- */
 function CargoRepositoryInMem() {
   const _store = new Map();
 
@@ -29,4 +23,4 @@ function CargoRepositoryInMem() {
   return { find, store, getAll, nextTrackingId };
 }
 
-module.exports = CargoRepositoryInMem;
+export default CargoRepositoryInMem;

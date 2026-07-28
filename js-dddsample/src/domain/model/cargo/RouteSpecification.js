@@ -1,10 +1,5 @@
-'use strict';
+import { withCombinators } from '../../shared/Specification.js';
 
-const { withCombinators } = require('../../shared/Specification');
-
-/**
- * Route specification — a specification that an itinerary must satisfy.
- */
 function RouteSpecification(origin, destination, arrivalDeadline) {
   if (!origin) throw new Error('Origin is required');
   if (!destination) throw new Error('Destination is required');
@@ -35,4 +30,4 @@ function RouteSpecification(origin, destination, arrivalDeadline) {
   return withCombinators({ isSatisfiedBy, origin: origin_, destination: destination_, arrivalDeadline: arrivalDeadline_, sameValueAs, equals });
 }
 
-module.exports = RouteSpecification;
+export default RouteSpecification;

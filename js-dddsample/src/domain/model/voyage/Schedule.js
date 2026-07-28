@@ -1,8 +1,3 @@
-'use strict';
-
-/**
- * Voyage schedule — ordered list of carrier movements.
- */
 function Schedule(carrierMovements) {
   if (!carrierMovements) throw new Error('Carrier movements are required');
   const _movements = [...carrierMovements];
@@ -21,4 +16,4 @@ function Schedule(carrierMovements) {
 
 Schedule.EMPTY = Schedule([]);
 
-module.exports = Schedule;
+export default Schedule;

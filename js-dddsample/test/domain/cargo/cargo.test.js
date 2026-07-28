@@ -1,17 +1,15 @@
-'use strict';
-
-const Cargo = require('../../../src/domain/model/cargo/Cargo');
-const TrackingId = require('../../../src/domain/model/cargo/TrackingId');
-const RouteSpecification = require('../../../src/domain/model/cargo/RouteSpecification');
-const Itinerary = require('../../../src/domain/model/cargo/Itinerary');
-const Leg = require('../../../src/domain/model/cargo/Leg');
-const HandlingHistory = require('../../../src/domain/model/handling/HandlingHistory');
-const HandlingEvent = require('../../../src/domain/model/handling/HandlingEvent');
-const HandlingEventType = require('../../../src/domain/model/handling/HandlingEventType');
-const RoutingStatus = require('../../../src/domain/model/cargo/RoutingStatus');
-const TransportStatus = require('../../../src/domain/model/cargo/TransportStatus');
-const { HONGKONG, STOCKHOLM, MELBOURNE, NEWYORK, HELSINKI, CHICAGO } = require('../../../src/infrastructure/sampledata/SampleLocations');
-const { v100, v200, v300, v400 } = require('../../../src/infrastructure/sampledata/SampleVoyages');
+import Cargo              from '../../../src/domain/model/cargo/Cargo.js';
+import TrackingId         from '../../../src/domain/model/cargo/TrackingId.js';
+import RouteSpecification from '../../../src/domain/model/cargo/RouteSpecification.js';
+import Itinerary          from '../../../src/domain/model/cargo/Itinerary.js';
+import Leg                from '../../../src/domain/model/cargo/Leg.js';
+import HandlingHistory    from '../../../src/domain/model/handling/HandlingHistory.js';
+import HandlingEvent      from '../../../src/domain/model/handling/HandlingEvent.js';
+import HandlingEventType  from '../../../src/domain/model/handling/HandlingEventType.js';
+import RoutingStatus      from '../../../src/domain/model/cargo/RoutingStatus.js';
+import TransportStatus    from '../../../src/domain/model/cargo/TransportStatus.js';
+import { HONGKONG, STOCKHOLM, MELBOURNE, NEWYORK, HELSINKI } from '../../../src/infrastructure/sampledata/SampleLocations.js';
+import { v100, v200, v300 } from '../../../src/infrastructure/sampledata/SampleVoyages.js';
 
 const DEADLINE = new Date('2009-12-31');
 
@@ -22,11 +20,10 @@ function makeCargo(origin, dest) {
   );
 }
 
-// Standard two-leg itinerary: HKG-[v100]->NYC-[v200]->STO
 function goodItinerary() {
   return Itinerary([
-    Leg(v100, HONGKONG, NEWYORK, new Date('2009-03-03'), new Date('2009-03-09')),
-    Leg(v200, NEWYORK, STOCKHOLM, new Date('2009-03-14'), new Date('2009-03-16')),
+    Leg(v100, HONGKONG, NEWYORK,   new Date('2009-03-03'), new Date('2009-03-09')),
+    Leg(v200, NEWYORK,  STOCKHOLM, new Date('2009-03-14'), new Date('2009-03-16')),
   ]);
 }
 
@@ -79,7 +76,6 @@ describe('Cargo', () => {
     expect(cargo.delivery().transportStatus()).toBe(TransportStatus.IN_PORT);
     expect(cargo.delivery().lastKnownLocation().sameIdentityAs(HONGKONG)).toBe(true);
 
-    // nextExpectedActivity after RECEIVE: should be LOAD at first leg
     const nea = cargo.delivery().nextExpectedActivity();
     expect(nea).not.toBeNull();
     expect(nea.type()).toBe(HandlingEventType.LOAD);

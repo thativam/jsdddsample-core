@@ -1,11 +1,9 @@
-'use strict';
+import express from 'express';
+import TrackingId from '../../domain/model/cargo/TrackingId.js';
+import CargoTrackingViewAdapter from '../../interfaces/tracking/CargoTrackingViewAdapter.js';
 
-const express = require('express');
-const router  = express.Router();
-const TrackingId = require('../../domain/model/cargo/TrackingId');
-const CargoTrackingViewAdapter = require('../../interfaces/tracking/CargoTrackingViewAdapter');
-
-module.exports = function trackingRoutes(cargoRepository, handlingEventRepository) {
+export default function trackingRoutes(cargoRepository, handlingEventRepository) {
+  const router = express.Router();
 
   router.get('/', async (req, res) => {
     const { trackingId } = req.query;
@@ -24,13 +22,13 @@ module.exports = function trackingRoutes(cargoRepository, handlingEventRepositor
       const handlingEvents = history.distinctEventsByCompletionTime();
       const adapter = CargoTrackingViewAdapter(cargo, handlingEvents);
       res.json({
-        trackingId:          adapter.getTrackingId(),
-        origin:              adapter.getOrigin(),
-        destination:         adapter.getDestination(),
-        statusText:          adapter.getStatusText(),
-        eta:                 adapter.getEta(),
+        trackingId:           adapter.getTrackingId(),
+        origin:               adapter.getOrigin(),
+        destination:          adapter.getDestination(),
+        statusText:           adapter.getStatusText(),
+        eta:                  adapter.getEta(),
         nextExpectedActivity: adapter.getNextExpectedActivity(),
-        misdirected:         adapter.isMisdirected(),
+        misdirected:          adapter.isMisdirected(),
         events: adapter.getEvents().map(e => ({
           location:     e.getLocation(),
           time:         e.getTime(),
@@ -46,4 +44,4 @@ module.exports = function trackingRoutes(cargoRepository, handlingEventRepositor
   });
 
   return router;
-};
+}

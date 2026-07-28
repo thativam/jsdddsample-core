@@ -1,21 +1,4 @@
-'use strict';
-
-const EventEmitter = require('events');
-
-/**
- * Async, EventEmitter-based ApplicationEvents — top-level independent functions.
- * The EventEmitter instance is the "state bean" — created via createEmitter()
- * and injected as the first parameter into every function.
- *
- * Mirrors Java's JmsApplicationEventsImpl.
- *
- *   Java JMS queue          → Node.js event
- *   ─────────────────────────────────────────
- *   handlingEventQueue      → 'handlingEventQueue'
- *   cargoHandledQueue       → 'cargoHandledQueue'
- *   misdirectedCargoQueue   → 'misdirectedCargoQueue'
- *   deliveredCargoQueue     → 'deliveredCargoQueue'
- */
+import { EventEmitter } from 'events';
 
 function createEmitter() {
   return new EventEmitter();
@@ -45,4 +28,4 @@ function cargoHasArrived(emitter, cargo) {
   setImmediate(() => emitter.emit('deliveredCargoQueue', cargo));
 }
 
-module.exports = { createEmitter, on, emit, receivedHandlingEventRegistrationAttempt, cargoWasHandled, cargoWasMisdirected, cargoHasArrived };
+export { createEmitter, on, emit, receivedHandlingEventRegistrationAttempt, cargoWasHandled, cargoWasMisdirected, cargoHasArrived };

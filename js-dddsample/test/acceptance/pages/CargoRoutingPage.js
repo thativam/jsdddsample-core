@@ -1,4 +1,4 @@
-'use strict';
+import CargoDetailsPage from './CargoDetailsPage.js';
 
 /**
  * CargoRoutingPage — Page Object for route selection.
@@ -17,7 +17,6 @@ function CargoRoutingPage(page) {
 
     /** Select the first route and submit → CargoDetailsPage */
     async assignCargoToFirstRoute() {
-      const CargoDetailsPage = require('./CargoDetailsPage');
       await page.click('input[name="itineraryIdx"][value="0"]');
       await page.click('button[type="submit"]');
       await page.waitForURL('**/show.html**', { timeout: 8000 });
@@ -33,4 +32,4 @@ function CargoRoutingPage(page) {
   };
 }
 
-module.exports = CargoRoutingPage;
+export default CargoRoutingPage;

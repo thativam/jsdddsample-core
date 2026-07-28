@@ -1,25 +1,25 @@
-'use strict';
+import express from 'express';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import { pathToFileURL } from 'url';
+import { createContainer } from './container.js';
+import adminRoutes    from './routes/adminRoutes.js';
+import trackingRoutes from './routes/trackingRoutes.js';
+import handlingRoutes from './routes/handlingRoutes.js';
 
-const express = require('express');
-const path    = require('path');
-const { createContainer } = require('./container');
-
-const adminRoutes    = require('./routes/adminRoutes');
-const trackingRoutes = require('./routes/trackingRoutes');
-const handlingRoutes = require('./routes/handlingRoutes');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname  = dirname(__filename);
 
 const app = express();
 
-// ── Middleware ────────────────────────────────────────────────────────────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
-app.use('/views', express.static(path.join(__dirname, 'views')));
+app.use(express.static(join(__dirname, 'public')));
+app.use('/views', express.static(join(__dirname, 'views')));
 
 app.get('/',      (req, res) => res.redirect('/views/track.html'));
 app.get('/admin', (req, res) => res.redirect('/views/admin/list.html'));
 
-// ── Async startup: build container then mount routes ─────────────────────────
 async function start() {
   const container = await createContainer();
 
@@ -37,9 +37,8 @@ async function start() {
   return container;
 }
 
-if (require.main === module) {
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   start().catch(err => { console.error('Startup failed:', err); process.exit(1); });
 }
 
-// For tests that need access to a container, export the factory
-module.exports = { app, start };
+export { app, start };

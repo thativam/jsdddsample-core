@@ -1,23 +1,20 @@
-'use strict';
-
-const Itinerary = require('../../../src/domain/model/cargo/Itinerary');
-const Leg = require('../../../src/domain/model/cargo/Leg');
-const HandlingEvent = require('../../../src/domain/model/handling/HandlingEvent');
-const HandlingEventType = require('../../../src/domain/model/handling/HandlingEventType');
-const Cargo = require('../../../src/domain/model/cargo/Cargo');
-const TrackingId = require('../../../src/domain/model/cargo/TrackingId');
-const RouteSpecification = require('../../../src/domain/model/cargo/RouteSpecification');
-const { HONGKONG, STOCKHOLM, MELBOURNE, NEWYORK, TOKYO } = require('../../../src/infrastructure/sampledata/SampleLocations');
-const { v100, v200 } = require('../../../src/infrastructure/sampledata/SampleVoyages');
+import Itinerary          from '../../../src/domain/model/cargo/Itinerary.js';
+import Leg                from '../../../src/domain/model/cargo/Leg.js';
+import HandlingEvent      from '../../../src/domain/model/handling/HandlingEvent.js';
+import HandlingEventType  from '../../../src/domain/model/handling/HandlingEventType.js';
+import Cargo              from '../../../src/domain/model/cargo/Cargo.js';
+import TrackingId         from '../../../src/domain/model/cargo/TrackingId.js';
+import RouteSpecification from '../../../src/domain/model/cargo/RouteSpecification.js';
+import { HONGKONG, STOCKHOLM, MELBOURNE, NEWYORK } from '../../../src/infrastructure/sampledata/SampleLocations.js';
+import { v100, v200 } from '../../../src/infrastructure/sampledata/SampleVoyages.js';
 
 function makeCargo() {
-  return new Cargo(TrackingId('TEST1'), RouteSpecification(HONGKONG, STOCKHOLM, new Date('2009-12-31')));
+  return Cargo(TrackingId('TEST1'), RouteSpecification(HONGKONG, STOCKHOLM, new Date('2009-12-31')));
 }
 
-// Itinerary: HONGKONG -[v100]-> NEWYORK -[v200]-> STOCKHOLM
 function makeItinerary() {
-  const leg1 = Leg(v100, HONGKONG, NEWYORK, new Date('2009-03-03'), new Date('2009-03-09'));
-  const leg2 = Leg(v200, NEWYORK, STOCKHOLM, new Date('2009-03-14'), new Date('2009-03-16'));
+  const leg1 = Leg(v100, HONGKONG, NEWYORK,   new Date('2009-03-03'), new Date('2009-03-09'));
+  const leg2 = Leg(v200, NEWYORK,  STOCKHOLM, new Date('2009-03-14'), new Date('2009-03-16'));
   return Itinerary([leg1, leg2]);
 }
 
@@ -45,42 +42,42 @@ describe('Itinerary', () => {
     const itinerary = makeItinerary();
 
     test('RECEIVE at origin is expected', () => {
-      const ev = new HandlingEvent(cargo, new Date(), new Date(), HandlingEventType.RECEIVE, HONGKONG);
+      const ev = HandlingEvent(cargo, new Date(), new Date(), HandlingEventType.RECEIVE, HONGKONG);
       expect(itinerary.isExpected(ev)).toBe(true);
     });
 
     test('RECEIVE at wrong location is not expected', () => {
-      const ev = new HandlingEvent(cargo, new Date(), new Date(), HandlingEventType.RECEIVE, MELBOURNE);
+      const ev = HandlingEvent(cargo, new Date(), new Date(), HandlingEventType.RECEIVE, MELBOURNE);
       expect(itinerary.isExpected(ev)).toBe(false);
     });
 
     test('LOAD at correct leg is expected', () => {
-      const ev = new HandlingEvent(cargo, new Date(), new Date(), HandlingEventType.LOAD, HONGKONG, v100);
+      const ev = HandlingEvent(cargo, new Date(), new Date(), HandlingEventType.LOAD, HONGKONG, v100);
       expect(itinerary.isExpected(ev)).toBe(true);
     });
 
     test('LOAD at wrong leg voyage is not expected', () => {
-      const ev = new HandlingEvent(cargo, new Date(), new Date(), HandlingEventType.LOAD, HONGKONG, v200);
+      const ev = HandlingEvent(cargo, new Date(), new Date(), HandlingEventType.LOAD, HONGKONG, v200);
       expect(itinerary.isExpected(ev)).toBe(false);
     });
 
     test('UNLOAD at correct leg is expected', () => {
-      const ev = new HandlingEvent(cargo, new Date(), new Date(), HandlingEventType.UNLOAD, NEWYORK, v100);
+      const ev = HandlingEvent(cargo, new Date(), new Date(), HandlingEventType.UNLOAD, NEWYORK, v100);
       expect(itinerary.isExpected(ev)).toBe(true);
     });
 
     test('CLAIM at final destination is expected', () => {
-      const ev = new HandlingEvent(cargo, new Date(), new Date(), HandlingEventType.CLAIM, STOCKHOLM);
+      const ev = HandlingEvent(cargo, new Date(), new Date(), HandlingEventType.CLAIM, STOCKHOLM);
       expect(itinerary.isExpected(ev)).toBe(true);
     });
 
     test('CLAIM at non-final location is not expected', () => {
-      const ev = new HandlingEvent(cargo, new Date(), new Date(), HandlingEventType.CLAIM, NEWYORK);
+      const ev = HandlingEvent(cargo, new Date(), new Date(), HandlingEventType.CLAIM, NEWYORK);
       expect(itinerary.isExpected(ev)).toBe(false);
     });
 
     test('CUSTOMS is always expected', () => {
-      const ev = new HandlingEvent(cargo, new Date(), new Date(), HandlingEventType.CUSTOMS, NEWYORK);
+      const ev = HandlingEvent(cargo, new Date(), new Date(), HandlingEventType.CUSTOMS, NEWYORK);
       expect(itinerary.isExpected(ev)).toBe(true);
     });
   });

@@ -1,26 +1,8 @@
-'use strict';
-
-const Voyage          = require('../../../../domain/model/voyage/Voyage');
-const VoyageNumber    = require('../../../../domain/model/voyage/VoyageNumber');
-const Schedule        = require('../../../../domain/model/voyage/Schedule');
-const CarrierMovement = require('../../../../domain/model/voyage/CarrierMovement');
-const Location        = require('../../../../domain/model/location/Location');
-const UnLocode        = require('../../../../domain/model/location/UnLocode');
-
-/**
- * Converts between Voyage domain object and MongoDB document.
- *
- * Document shape:
- * {
- *   _id: "V100",
- *   carrierMovements: [
- *     { fromCode: "CNHKG", toCode: "USNYC", departureTime: ISODate, arrivalTime: ISODate }
- *   ]
- * }
- *
- * Note: carrier movement locations are referenced by UnLocode code.
- * toDomain requires findLocation callback to reconstruct Location objects.
- */
+import Voyage          from '../../../../domain/model/voyage/Voyage.js';
+import VoyageNumber    from '../../../../domain/model/voyage/VoyageNumber.js';
+import Schedule        from '../../../../domain/model/voyage/Schedule.js';
+import CarrierMovement from '../../../../domain/model/voyage/CarrierMovement.js';
+import UnLocode        from '../../../../domain/model/location/UnLocode.js';
 
 function toDocument(voyage) {
   return {
@@ -46,4 +28,4 @@ async function toDomain(doc, findLocation) {
   return Voyage(VoyageNumber(doc._id), Schedule(movements));
 }
 
-module.exports = { toDocument, toDomain };
+export { toDocument, toDomain };

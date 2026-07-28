@@ -1,8 +1,3 @@
-'use strict';
-
-/**
- * Handling history — ordered collection of handling events for a cargo.
- */
 function HandlingHistory(handlingEvents) {
   if (!handlingEvents) throw new Error('Handling events are required');
   const _events = [...handlingEvents];
@@ -39,4 +34,4 @@ function HandlingHistory(handlingEvents) {
 
 HandlingHistory.EMPTY = HandlingHistory([]);
 
-module.exports = HandlingHistory;
+export default HandlingHistory;

@@ -1,15 +1,7 @@
-'use strict';
+import Location from '../../../domain/model/location/Location.js';
+import UnLocode from '../../../domain/model/location/UnLocode.js';
 
-const Location = require('../../../domain/model/location/Location');
-const UnLocode = require('../../../domain/model/location/UnLocode');
-
-/**
- * MySQL Location repository using mysql2/promise pool.
- *
- * @param {import('mysql2/promise').Pool} pool
- */
 function LocationRepositoryMySQL(pool) {
-
   async function find(unLocode) {
     const [rows] = await pool.execute(
       'SELECT unlocode, name FROM locations WHERE unlocode = ?',
@@ -34,4 +26,4 @@ function LocationRepositoryMySQL(pool) {
   return { find, store, getAll };
 }
 
-module.exports = LocationRepositoryMySQL;
+export default LocationRepositoryMySQL;

@@ -1,9 +1,3 @@
-'use strict';
-
-/**
- * Cargo inspection service — async top-level function.
- */
-
 async function inspectCargo(findCargo, storeCargo, lookupHistory, emitMisdirected, emitArrived, trackingId) {
   if (!trackingId) throw new Error('Tracking ID is required');
   const cargo = await findCargo(trackingId);
@@ -23,4 +17,4 @@ async function inspectCargo(findCargo, storeCargo, lookupHistory, emitMisdirecte
   await storeCargo(cargo);
 }
 
-module.exports = { inspectCargo };
+export { inspectCargo };

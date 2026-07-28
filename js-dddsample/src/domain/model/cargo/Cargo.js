@@ -1,16 +1,10 @@
-'use strict';
+import TrackingId    from './TrackingId.js';
+import Delivery      from './Delivery.js';
+import HandlingHistory from '../handling/HandlingHistory.js';
 
-const TrackingId = require('./TrackingId');
-const Delivery   = require('./Delivery');
-
-/**
- * Cargo aggregate root.
- */
 function Cargo(trackingId, routeSpecification, itinerary) {
   if (!trackingId) throw new Error('Tracking ID is required');
   if (!routeSpecification) throw new Error('Route specification is required');
-
-  const HandlingHistory = require('../handling/HandlingHistory');
 
   const _id     = typeof trackingId.idString === 'function' ? trackingId.idString() : String(trackingId);
   const _origin = routeSpecification.origin();
@@ -51,4 +45,4 @@ function Cargo(trackingId, routeSpecification, itinerary) {
   return { trackingId: trackingId_, origin, delivery, itinerary: itinerary_, routeSpecification: routeSpecification_, specifyNewRoute, assignToRoute, deriveDeliveryProgress, sameIdentityAs, equals, toString };
 }
 
-module.exports = Cargo;
+export default Cargo;

@@ -1,26 +1,13 @@
-'use strict';
+import { randomUUID } from 'crypto';
+import Cargo              from '../../../domain/model/cargo/Cargo.js';
+import TrackingId         from '../../../domain/model/cargo/TrackingId.js';
+import RouteSpecification from '../../../domain/model/cargo/RouteSpecification.js';
+import Itinerary          from '../../../domain/model/cargo/Itinerary.js';
+import Leg                from '../../../domain/model/cargo/Leg.js';
+import UnLocode           from '../../../domain/model/location/UnLocode.js';
+import VoyageNumber       from '../../../domain/model/voyage/VoyageNumber.js';
 
-const { randomUUID } = require('crypto');
-const Cargo              = require('../../../domain/model/cargo/Cargo');
-const TrackingId         = require('../../../domain/model/cargo/TrackingId');
-const RouteSpecification = require('../../../domain/model/cargo/RouteSpecification');
-const Itinerary          = require('../../../domain/model/cargo/Itinerary');
-const Leg                = require('../../../domain/model/cargo/Leg');
-const UnLocode           = require('../../../domain/model/location/UnLocode');
-const VoyageNumber       = require('../../../domain/model/voyage/VoyageNumber');
-
-/**
- * MySQL Cargo repository using mysql2/promise pool.
- *
- * Delivery is re-derived from handling history on every load (same strategy as MongoDB impl).
- *
- * @param {import('mysql2/promise').Pool} pool
- * @param {Function} findLocation                 - async (UnLocode) => Location
- * @param {Function} findVoyage                   - async (VoyageNumber) => Voyage
- * @param {Function} lookupHandlingHistoryOfCargo - async (TrackingId) => HandlingHistory
- */
 function CargoRepositoryMySQL(pool, findLocation, findVoyage, lookupHandlingHistoryOfCargo) {
-
   async function _buildCargo(row) {
     const trackingId = TrackingId(row.tracking_id);
     const [origin, dest] = await Promise.all([
@@ -104,4 +91,4 @@ function CargoRepositoryMySQL(pool, findLocation, findVoyage, lookupHandlingHist
   return { find, store, getAll, nextTrackingId };
 }
 
-module.exports = CargoRepositoryMySQL;
+export default CargoRepositoryMySQL;

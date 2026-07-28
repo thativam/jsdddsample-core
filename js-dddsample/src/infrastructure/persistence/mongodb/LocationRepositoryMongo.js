@@ -1,14 +1,6 @@
-'use strict';
+import * as LocationMapper from './mappers/LocationMapper.js';
 
-const LocationMapper = require('./mappers/LocationMapper');
-
-/**
- * MongoDB Location repository.
- *
- * @param {import('mongodb').Collection} collection  - db.collection('locations')
- */
 function LocationRepositoryMongo(collection) {
-
   async function find(unLocode) {
     const doc = await collection.findOne({ _id: unLocode.idString() });
     return LocationMapper.toDomain(doc);
@@ -27,4 +19,4 @@ function LocationRepositoryMongo(collection) {
   return { find, store, getAll };
 }
 
-module.exports = LocationRepositoryMongo;
+export default LocationRepositoryMongo;

@@ -1,14 +1,7 @@
-'use strict';
-
-const Itinerary    = require('../../domain/model/cargo/Itinerary');
-const Leg          = require('../../domain/model/cargo/Leg');
-const VoyageNumber = require('../../domain/model/voyage/VoyageNumber');
-const UnLocode     = require('../../domain/model/location/UnLocode');
-
-/**
- * Anti-corruption layer: translates TransitPath/TransitEdge to Itinerary/Leg.
- * All find callbacks are async (repo methods).
- */
+import Itinerary    from '../../domain/model/cargo/Itinerary.js';
+import Leg          from '../../domain/model/cargo/Leg.js';
+import VoyageNumber from '../../domain/model/voyage/VoyageNumber.js';
+import UnLocode     from '../../domain/model/location/UnLocode.js';
 
 async function toLeg(findVoyage, findLocation, edge) {
   const [voyage, loadLoc, unloadLoc] = await Promise.all([
@@ -48,4 +41,4 @@ async function fetchRoutesForSpecification(findShortestPath, findLocation, findV
     .filter(it => routeSpecification.isSatisfiedBy(it));
 }
 
-module.exports = { fetchRoutesForSpecification };
+export { fetchRoutesForSpecification };

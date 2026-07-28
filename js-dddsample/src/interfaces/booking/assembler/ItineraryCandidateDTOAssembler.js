@@ -1,14 +1,7 @@
-'use strict';
-
-const Itinerary    = require('../../../domain/model/cargo/Itinerary');
-const Leg          = require('../../../domain/model/cargo/Leg');
-const VoyageNumber = require('../../../domain/model/voyage/VoyageNumber');
-const UnLocode     = require('../../../domain/model/location/UnLocode');
-
-/**
- * Assembles RouteCandidateDTO from Itinerary and vice versa.
- * fromDTO is async: findVoyage/findLocation callbacks are async repo methods.
- */
+import Itinerary    from '../../../domain/model/cargo/Itinerary.js';
+import Leg          from '../../../domain/model/cargo/Leg.js';
+import VoyageNumber from '../../../domain/model/voyage/VoyageNumber.js';
+import UnLocode     from '../../../domain/model/location/UnLocode.js';
 
 function toDTO(itinerary) {
   return {
@@ -34,4 +27,4 @@ async function fromDTO(dto, findVoyage, findLocation) {
   return Itinerary(legs);
 }
 
-module.exports = { toDTO, fromDTO };
+export { toDTO, fromDTO };

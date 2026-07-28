@@ -1,33 +1,14 @@
-'use strict';
+import { randomUUID } from 'crypto';
+import TrackingId  from '../../../domain/model/cargo/TrackingId.js';
+import * as CargoMapper from './mappers/CargoMapper.js';
 
-const { randomUUID } = require('crypto');
-const TrackingId  = require('../../../domain/model/cargo/TrackingId');
-const CargoMapper = require('./mappers/CargoMapper');
-
-/**
- * MongoDB Cargo repository.
- *
- * Delivery is NOT stored — it is re-derived from the handling history on every load,
- * matching the Java DDD sample's approach of keeping Delivery as a computed snapshot.
- *
- * @param {import('mongodb').Collection} collection          - db.collection('cargos')
- * @param {Function} findLocation                            - async (UnLocode) => Location
- * @param {Function} findVoyage                              - async (VoyageNumber) => Voyage
- * @param {Function} lookupHandlingHistoryOfCargo            - async (TrackingId) => HandlingHistory
- *   Injected from HandlingEventRepository to reconstruct Delivery state on load.
- */
 function CargoRepositoryMongo(collection, findLocation, findVoyage, lookupHandlingHistoryOfCargo) {
-
   async function find(trackingId) {
     const doc = await collection.findOne({ _id: trackingId.idString() });
     if (!doc) return null;
-
-    const cargo = await CargoMapper.toDomain(doc, findLocation, findVoyage);
-
-    // Re-derive delivery from handling history so the snapshot is always current
+    const cargo   = await CargoMapper.toDomain(doc, findLocation, findVoyage);
     const history = await lookupHandlingHistoryOfCargo(trackingId);
     cargo.deriveDeliveryProgress(history);
-
     return cargo;
   }
 
@@ -53,4 +34,4 @@ function CargoRepositoryMongo(collection, findLocation, findVoyage, lookupHandli
   return { find, store, getAll, nextTrackingId };
 }
 
-module.exports = CargoRepositoryMongo;
+export default CargoRepositoryMongo;

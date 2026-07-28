@@ -1,13 +1,11 @@
-'use strict';
-
 /**
  * Customer acceptance tests — mirrors CustomerAcceptanceTest.java.
  *
  * Java: @SpringBootTest + MockMvcHtmlUnitDriver
  * JS:   Playwright + Express server (started by webServer in playwright.config.js)
  */
-const { test, expect, beforeEach } = require('@playwright/test');
-const CustomerPage = require('./pages/CustomerPage');
+import { test, expect } from '@playwright/test';
+import CustomerPage from './pages/CustomerPage.js';
 
 test.beforeEach(async ({ page }) => {
   const customerPage = CustomerPage(page);

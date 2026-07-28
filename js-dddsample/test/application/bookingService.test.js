@@ -1,21 +1,19 @@
-'use strict';
+import * as BookingService         from '../../src/application/BookingService.js';
+import CargoFactory           from '../../src/domain/model/cargo/CargoFactory.js';
+import * as ExternalRoutingService from '../../src/infrastructure/routing/ExternalRoutingService.js';
+import * as GraphTraversalService  from '../../src/infrastructure/routing/GraphTraversalService.js';
+import * as GraphDAOStub           from '../../src/infrastructure/routing/GraphDAOStub.js';
+import CargoRepositoryInMem        from '../../src/infrastructure/persistence/inmemory/CargoRepositoryInMem.js';
+import LocationRepositoryInMem     from '../../src/infrastructure/persistence/inmemory/LocationRepositoryInMem.js';
+import VoyageRepositoryInMem       from '../../src/infrastructure/persistence/inmemory/VoyageRepositoryInMem.js';
 
-const BookingService         = require('../../src/application/BookingService');
-const CargoFactory           = require('../../src/domain/model/cargo/CargoFactory');
-const ExternalRoutingService = require('../../src/infrastructure/routing/ExternalRoutingService');
-const GraphTraversalService  = require('../../src/infrastructure/routing/GraphTraversalService');
-const GraphDAOStub           = require('../../src/infrastructure/routing/GraphDAOStub');
-const CargoRepositoryInMem   = require('../../src/infrastructure/persistence/inmemory/CargoRepositoryInMem');
-const LocationRepositoryInMem = require('../../src/infrastructure/persistence/inmemory/LocationRepositoryInMem');
-const VoyageRepositoryInMem   = require('../../src/infrastructure/persistence/inmemory/VoyageRepositoryInMem');
-
-const UnLocode      = require('../../src/domain/model/location/UnLocode');
-const TrackingId    = require('../../src/domain/model/cargo/TrackingId');
-const RoutingStatus = require('../../src/domain/model/cargo/RoutingStatus');
-const Itinerary     = require('../../src/domain/model/cargo/Itinerary');
-const Leg           = require('../../src/domain/model/cargo/Leg');
-const { HONGKONG, STOCKHOLM, HELSINKI } = require('../../src/infrastructure/sampledata/SampleLocations');
-const { v100 }     = require('../../src/infrastructure/sampledata/SampleVoyages');
+import UnLocode      from '../../src/domain/model/location/UnLocode.js';
+import TrackingId    from '../../src/domain/model/cargo/TrackingId.js';
+import RoutingStatus from '../../src/domain/model/cargo/RoutingStatus.js';
+import Itinerary     from '../../src/domain/model/cargo/Itinerary.js';
+import Leg           from '../../src/domain/model/cargo/Leg.js';
+import { HONGKONG, STOCKHOLM, HELSINKI } from '../../src/infrastructure/sampledata/SampleLocations.js';
+import { v100 }     from '../../src/infrastructure/sampledata/SampleVoyages.js';
 
 function makeService() {
   const cargoRepo    = CargoRepositoryInMem();

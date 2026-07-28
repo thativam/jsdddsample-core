@@ -1,8 +1,3 @@
-'use strict';
-
-/**
- * Tracking ID — value object uniquely identifying a cargo.
- */
 function TrackingId(id) {
   if (!id) throw new Error('Tracking ID is required and must not be empty');
   const _id = String(id);
@@ -17,4 +12,4 @@ function TrackingId(id) {
   return { idString, sameValueAs, equals, toString };
 }
 
-module.exports = TrackingId;
+export default TrackingId;

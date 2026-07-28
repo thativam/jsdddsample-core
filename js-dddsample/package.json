@@ -2,12 +2,13 @@
   "name": "js-dddsample",
   "version": "1.0.0",
   "description": "JavaScript DDD Sample - port of the Java DDD Sample application",
+  "type": "module",
   "main": "src/server/app.js",
   "scripts": {
     "start": "node src/server/app.js",
-    "test": "jest --testPathPattern=test/ --forceExit",
-    "test:coverage": "jest --testPathPattern=test/ --forceExit --coverage",
-    "test:watch": "jest --watch",
+    "test": "node --experimental-vm-modules node_modules/jest-cli/bin/jest.js --testPathPattern=test/ --forceExit",
+    "test:coverage": "node --experimental-vm-modules node_modules/jest-cli/bin/jest.js --testPathPattern=test/ --forceExit --coverage",
+    "test:watch": "node --experimental-vm-modules node_modules/jest-cli/bin/jest.js --watch",
     "test:acceptance": "playwright test",
     "test:acceptance:ui": "playwright test --ui"
   },
@@ -27,6 +28,10 @@
     "testEnvironment": "node",
     "testMatch": [
       "**/test/**/*.test.js"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/test/acceptance/"
     ]
   }
 }

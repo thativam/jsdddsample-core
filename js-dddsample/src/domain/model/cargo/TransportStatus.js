@@ -1,5 +1,3 @@
-'use strict';
-
 const TransportStatus = Object.freeze({
   NOT_RECEIVED: 'NOT_RECEIVED',
   IN_PORT: 'IN_PORT',
@@ -8,4 +6,4 @@ const TransportStatus = Object.freeze({
   UNKNOWN: 'UNKNOWN',
 });
 
-module.exports = TransportStatus;
+export default TransportStatus;

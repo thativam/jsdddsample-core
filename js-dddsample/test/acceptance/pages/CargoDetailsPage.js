@@ -1,4 +1,6 @@
-'use strict';
+import CargoDestinationPage from './CargoDestinationPage.js';
+import CargoRoutingPage from './CargoRoutingPage.js';
+import AdminPage from './AdminPage.js';
 
 /**
  * CargoDetailsPage — Page Object for the cargo detail view.
@@ -85,7 +87,6 @@ function CargoDetailsPage(page) {
 
     /** Click "Change destination" → CargoDestinationPage */
     async changeDestination() {
-      const CargoDestinationPage = require('./CargoDestinationPage');
       // href starts as "#"; set async by loadCargo() — wait for the real path
       await waitForHref('#changeDestLink');
       await page.click('#changeDestLink');
@@ -95,7 +96,6 @@ function CargoDetailsPage(page) {
 
     /** Click "Route this cargo" → CargoRoutingPage */
     async routeCargo() {
-      const CargoRoutingPage = require('./CargoRoutingPage');
       await waitForHref('#routeLink');
       await page.click('#routeLink');
       // Wait for routing page fetch to finish: form visible (routes found) or no-routes visible
@@ -108,7 +108,6 @@ function CargoDetailsPage(page) {
 
     /** Click "List all cargos" → AdminPage */
     async listAllCargo() {
-      const AdminPage = require('./AdminPage');
       await page.click('a[href*="list.html"]');
       await page.waitForSelector('#cargoBody tr', { timeout: 6000 });
       return AdminPage(page);
@@ -116,4 +115,4 @@ function CargoDetailsPage(page) {
   };
 }
 
-module.exports = CargoDetailsPage;
+export default CargoDetailsPage;

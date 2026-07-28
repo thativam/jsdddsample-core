@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * CustomerPage — Page Object for the public cargo tracking UI.
  * Mirrors se.citerus.dddsample.acceptance.pages.CustomerPage.
@@ -62,4 +60,4 @@ function CustomerPage(page) {
   };
 }
 
-module.exports = CustomerPage;
+export default CustomerPage;

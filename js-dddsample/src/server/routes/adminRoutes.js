@@ -1,9 +1,7 @@
-'use strict';
+import express from 'express';
 
-const express = require('express');
-const router  = express.Router();
-
-module.exports = function adminRoutes(bookingServiceFacade) {
+export default function adminRoutes(bookingServiceFacade) {
+  const router = express.Router();
 
   router.get('/registration', async (req, res) => {
     try {
@@ -76,4 +74,4 @@ module.exports = function adminRoutes(bookingServiceFacade) {
   });
 
   return router;
-};
+}

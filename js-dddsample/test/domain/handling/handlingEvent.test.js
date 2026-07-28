@@ -1,12 +1,10 @@
-'use strict';
-
-const HandlingEvent = require('../../../src/domain/model/handling/HandlingEvent');
-const HandlingEventType = require('../../../src/domain/model/handling/HandlingEventType');
-const Cargo = require('../../../src/domain/model/cargo/Cargo');
-const TrackingId = require('../../../src/domain/model/cargo/TrackingId');
-const RouteSpecification = require('../../../src/domain/model/cargo/RouteSpecification');
-const { HONGKONG, MELBOURNE, STOCKHOLM, HELSINKI } = require('../../../src/infrastructure/sampledata/SampleLocations');
-const { v100 } = require('../../../src/infrastructure/sampledata/SampleVoyages');
+import HandlingEvent     from '../../../src/domain/model/handling/HandlingEvent.js';
+import HandlingEventType from '../../../src/domain/model/handling/HandlingEventType.js';
+import Cargo             from '../../../src/domain/model/cargo/Cargo.js';
+import TrackingId        from '../../../src/domain/model/cargo/TrackingId.js';
+import RouteSpecification from '../../../src/domain/model/cargo/RouteSpecification.js';
+import { HONGKONG, STOCKHOLM } from '../../../src/infrastructure/sampledata/SampleLocations.js';
+import { v100 }                from '../../../src/infrastructure/sampledata/SampleVoyages.js';
 
 function makeCargo(id = 'TEST1') {
   return Cargo(
@@ -32,13 +30,11 @@ describe('HandlingEvent', () => {
   });
 
   test('LOAD without voyage throws', () => {
-    expect(() => HandlingEvent(cargo, now, now, HandlingEventType.LOAD, HONGKONG))
-      .toThrow();
+    expect(() => HandlingEvent(cargo, now, now, HandlingEventType.LOAD, HONGKONG)).toThrow();
   });
 
   test('RECEIVE with voyage throws', () => {
-    expect(() => HandlingEvent(cargo, now, now, HandlingEventType.RECEIVE, HONGKONG, v100))
-      .toThrow();
+    expect(() => HandlingEvent(cargo, now, now, HandlingEventType.RECEIVE, HONGKONG, v100)).toThrow();
   });
 
   test('CLAIM without voyage is valid', () => {
@@ -52,8 +48,7 @@ describe('HandlingEvent', () => {
   });
 
   test('UNLOAD requires voyage', () => {
-    expect(() => HandlingEvent(cargo, now, now, HandlingEventType.UNLOAD, STOCKHOLM))
-      .toThrow();
+    expect(() => HandlingEvent(cargo, now, now, HandlingEventType.UNLOAD, STOCKHOLM)).toThrow();
     const ev = HandlingEvent(cargo, now, now, HandlingEventType.UNLOAD, STOCKHOLM, v100);
     expect(ev.type()).toBe(HandlingEventType.UNLOAD);
   });

@@ -1,43 +1,24 @@
-'use strict';
+import HandlingEventFactory  from '../domain/model/handling/HandlingEventFactory.js';
+import CargoFactory          from '../domain/model/cargo/CargoFactory.js';
 
-/**
- * Composition root — manual dependency injection.
- *
- * Driver selection via environment variables:
- *
- *   DB_DRIVER = inmemory | mongodb | mysql   (default: inmemory)
- *   MQ_DRIVER = local | rabbitmq             (default: local)
- *
- * MongoDB env:  MONGODB_URI, MONGODB_DB
- * MySQL env:    MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE
- * RabbitMQ env: RABBITMQ_URL
- *
- * Usage:
- *   const container = await createContainer();
- *   app.use('/admin', adminRoutes(container.bookingServiceFacade));
- */
+import * as BookingService         from '../application/BookingService.js';
+import * as HandlingEventService   from '../application/HandlingEventService.js';
+import * as CargoInspectionService from '../application/CargoInspectionService.js';
 
-const HandlingEventFactory  = require('../domain/model/handling/HandlingEventFactory');
-const CargoFactory          = require('../domain/model/cargo/CargoFactory');
+import * as GraphDAOStub           from '../infrastructure/routing/GraphDAOStub.js';
+import * as GraphTraversalService  from '../infrastructure/routing/GraphTraversalService.js';
+import * as ExternalRoutingService from '../infrastructure/routing/ExternalRoutingService.js';
 
-const BookingService         = require('../application/BookingService');
-const HandlingEventService   = require('../application/HandlingEventService');
-const CargoInspectionService = require('../application/CargoInspectionService');
-
-const GraphDAOStub           = require('../infrastructure/routing/GraphDAOStub');
-const GraphTraversalService  = require('../infrastructure/routing/GraphTraversalService');
-const ExternalRoutingService = require('../infrastructure/routing/ExternalRoutingService');
-
-const BookingServiceFacade   = require('../interfaces/booking/BookingServiceFacade');
-const SampleDataGenerator    = require('../infrastructure/sampledata/SampleDataGenerator');
+import * as BookingServiceFacade   from '../interfaces/booking/BookingServiceFacade.js';
+import * as SampleDataGenerator    from '../infrastructure/sampledata/SampleDataGenerator.js';
 
 // ── Repository factories ──────────────────────────────────────────────────────
 
 async function buildInMemoryRepos() {
-  const CargoRepositoryInMem         = require('../infrastructure/persistence/inmemory/CargoRepositoryInMem');
-  const HandlingEventRepositoryInMem = require('../infrastructure/persistence/inmemory/HandlingEventRepositoryInMem');
-  const LocationRepositoryInMem      = require('../infrastructure/persistence/inmemory/LocationRepositoryInMem');
-  const VoyageRepositoryInMem        = require('../infrastructure/persistence/inmemory/VoyageRepositoryInMem');
+  const { default: CargoRepositoryInMem }         = await import('../infrastructure/persistence/inmemory/CargoRepositoryInMem.js');
+  const { default: HandlingEventRepositoryInMem } = await import('../infrastructure/persistence/inmemory/HandlingEventRepositoryInMem.js');
+  const { default: LocationRepositoryInMem }      = await import('../infrastructure/persistence/inmemory/LocationRepositoryInMem.js');
+  const { default: VoyageRepositoryInMem }        = await import('../infrastructure/persistence/inmemory/VoyageRepositoryInMem.js');
   return {
     cargoRepository:         CargoRepositoryInMem(),
     handlingEventRepository: HandlingEventRepositoryInMem(),
@@ -48,11 +29,11 @@ async function buildInMemoryRepos() {
 }
 
 async function buildMongoRepos() {
-  const { MongoClient }              = require('mongodb');
-  const CargoRepositoryMongo         = require('../infrastructure/persistence/mongodb/CargoRepositoryMongo');
-  const HandlingEventRepositoryMongo = require('../infrastructure/persistence/mongodb/HandlingEventRepositoryMongo');
-  const LocationRepositoryMongo      = require('../infrastructure/persistence/mongodb/LocationRepositoryMongo');
-  const VoyageRepositoryMongo        = require('../infrastructure/persistence/mongodb/VoyageRepositoryMongo');
+  const { MongoClient }                           = await import('mongodb');
+  const { default: CargoRepositoryMongo }         = await import('../infrastructure/persistence/mongodb/CargoRepositoryMongo.js');
+  const { default: HandlingEventRepositoryMongo } = await import('../infrastructure/persistence/mongodb/HandlingEventRepositoryMongo.js');
+  const { default: LocationRepositoryMongo }      = await import('../infrastructure/persistence/mongodb/LocationRepositoryMongo.js');
+  const { default: VoyageRepositoryMongo }        = await import('../infrastructure/persistence/mongodb/VoyageRepositoryMongo.js');
 
   const uri    = process.env.MONGODB_URI || 'mongodb://localhost:27017';
   const dbName = process.env.MONGODB_DB  || 'dddsample';
@@ -66,7 +47,6 @@ async function buildMongoRepos() {
     (unLocode) => locationRepository.find(unLocode)
   );
 
-  // Lazy refs break the Cargo ↔ HandlingEvent circular dependency
   let cargoRepository;
   const handlingEventRepository = HandlingEventRepositoryMongo(
     db.collection('handlingEvents'),
@@ -85,11 +65,11 @@ async function buildMongoRepos() {
 }
 
 async function buildMySQLRepos() {
-  const mysql2                       = require('mysql2/promise');
-  const CargoRepositoryMySQL         = require('../infrastructure/persistence/mysql/CargoRepositoryMySQL');
-  const HandlingEventRepositoryMySQL = require('../infrastructure/persistence/mysql/HandlingEventRepositoryMySQL');
-  const LocationRepositoryMySQL      = require('../infrastructure/persistence/mysql/LocationRepositoryMySQL');
-  const VoyageRepositoryMySQL        = require('../infrastructure/persistence/mysql/VoyageRepositoryMySQL');
+  const mysql2                               = (await import('mysql2/promise')).default;
+  const { default: CargoRepositoryMySQL }         = await import('../infrastructure/persistence/mysql/CargoRepositoryMySQL.js');
+  const { default: HandlingEventRepositoryMySQL } = await import('../infrastructure/persistence/mysql/HandlingEventRepositoryMySQL.js');
+  const { default: LocationRepositoryMySQL }      = await import('../infrastructure/persistence/mysql/LocationRepositoryMySQL.js');
+  const { default: VoyageRepositoryMySQL }        = await import('../infrastructure/persistence/mysql/VoyageRepositoryMySQL.js');
 
   const pool = mysql2.createPool({
     host:     process.env.MYSQL_HOST     || 'localhost',
@@ -124,22 +104,29 @@ async function buildMySQLRepos() {
 // ── Messaging factories ───────────────────────────────────────────────────────
 
 function buildLocalEvents() {
-  const AsyncApplicationEvents = require('../infrastructure/messaging/AsyncApplicationEvents');
-  const _emitter = AsyncApplicationEvents.createEmitter();
-  const applicationEvents = {
-    on:   (event, handler) => AsyncApplicationEvents.on(_emitter, event, handler),
-    emit: (event, ...args) => AsyncApplicationEvents.emit(_emitter, event, ...args),
-    receivedHandlingEventRegistrationAttempt: (attempt) =>
-      AsyncApplicationEvents.receivedHandlingEventRegistrationAttempt(_emitter, attempt),
-    cargoWasHandled:     (event) => AsyncApplicationEvents.cargoWasHandled(_emitter, event),
-    cargoWasMisdirected: (cargo) => AsyncApplicationEvents.cargoWasMisdirected(_emitter, cargo),
-    cargoHasArrived:     (cargo) => AsyncApplicationEvents.cargoHasArrived(_emitter, cargo),
-  };
-  return { applicationEvents, mq: null, disconnect: async () => {} };
+  const AsyncApplicationEvents = { createEmitter: null, on: null, emit: null,
+    receivedHandlingEventRegistrationAttempt: null, cargoWasHandled: null,
+    cargoWasMisdirected: null, cargoHasArrived: null };
+
+  // Inline to avoid top-level await
+  return import('../infrastructure/messaging/AsyncApplicationEvents.js').then(mod => {
+    Object.assign(AsyncApplicationEvents, mod);
+    const _emitter = AsyncApplicationEvents.createEmitter();
+    const applicationEvents = {
+      on:   (event, handler) => AsyncApplicationEvents.on(_emitter, event, handler),
+      emit: (event, ...args) => AsyncApplicationEvents.emit(_emitter, event, ...args),
+      receivedHandlingEventRegistrationAttempt: (attempt) =>
+        AsyncApplicationEvents.receivedHandlingEventRegistrationAttempt(_emitter, attempt),
+      cargoWasHandled:     (event) => AsyncApplicationEvents.cargoWasHandled(_emitter, event),
+      cargoWasMisdirected: (cargo) => AsyncApplicationEvents.cargoWasMisdirected(_emitter, cargo),
+      cargoHasArrived:     (cargo) => AsyncApplicationEvents.cargoHasArrived(_emitter, cargo),
+    };
+    return { applicationEvents, mq: null, disconnect: async () => {} };
+  });
 }
 
 async function buildRabbitMQEvents() {
-  const RabbitMQ = require('../infrastructure/messaging/rabbitmq/RabbitMQApplicationEvents');
+  const RabbitMQ = await import('../infrastructure/messaging/rabbitmq/RabbitMQApplicationEvents.js');
   const mq       = await RabbitMQ.connect();
   return { applicationEvents: mq.publisher, mq, disconnect: () => mq.close() };
 }
@@ -150,20 +137,17 @@ async function createContainer() {
   const dbDriver = process.env.DB_DRIVER || 'inmemory';
   const mqDriver = process.env.MQ_DRIVER || 'local';
 
-  // 1. Repos
   let repos;
   if      (dbDriver === 'mongodb') repos = await buildMongoRepos();
   else if (dbDriver === 'mysql')   repos = await buildMySQLRepos();
   else                             repos = await buildInMemoryRepos();
   const { cargoRepository, handlingEventRepository, locationRepository, voyageRepository } = repos;
 
-  // 2. Messaging
   const mqHandle = mqDriver === 'rabbitmq'
     ? await buildRabbitMQEvents()
-    : buildLocalEvents();
+    : await buildLocalEvents();
   const { applicationEvents } = mqHandle;
 
-  // 3. Bound callbacks
   const boundCreateCargo = (originUnLocode, destinationUnLocode, arrivalDeadline) =>
     CargoFactory.createCargo(
       () => cargoRepository.nextTrackingId(),
@@ -185,7 +169,6 @@ async function createContainer() {
       boundFindShortestPath, locationRepository.find, voyageRepository.find, routeSpec
     );
 
-  // 4. Application services
   const bookingService = {
     bookNewCargo: (o, d, dl) =>
       BookingService.bookNewCargo(boundCreateCargo, cargoRepository.store, o, d, dl),
@@ -215,13 +198,12 @@ async function createContainer() {
       ),
   };
 
-  // 5. Wire consumers
   if (mqDriver === 'rabbitmq') {
     const { mq } = mqHandle;
-    const TrackingId        = require('../domain/model/cargo/TrackingId');
-    const VoyageNumber      = require('../domain/model/voyage/VoyageNumber');
-    const UnLocode          = require('../domain/model/location/UnLocode');
-    const HandlingEventType = require('../domain/model/handling/HandlingEventType');
+    const { default: TrackingId }        = await import('../domain/model/cargo/TrackingId.js');
+    const { default: VoyageNumber }      = await import('../domain/model/voyage/VoyageNumber.js');
+    const { default: UnLocode }          = await import('../domain/model/location/UnLocode.js');
+    const { default: HandlingEventType } = await import('../domain/model/handling/HandlingEventType.js');
 
     await mq.onHandlingEventAttempt(async (payload) => {
       try {
@@ -237,7 +219,8 @@ async function createContainer() {
 
     await mq.onCargoHandled(async (payload) => {
       try {
-        await cargoInspectionService.inspectCargo(TrackingId(payload.cargoTrackingId));
+        const { default: TrackingId2 } = await import('../domain/model/cargo/TrackingId.js');
+        await cargoInspectionService.inspectCargo(TrackingId2(payload.cargoTrackingId));
       } catch (e) { console.error('[RabbitMQ:cargoHandledQueue]', e.message); }
     });
 
@@ -262,7 +245,6 @@ async function createContainer() {
       console.info(`[deliveredCargoQueue] Cargo ${cargo.trackingId().idString()} arrived`));
   }
 
-  // 6. Facade
   const bookingServiceFacade = {
     listShippingLocations: () =>
       BookingServiceFacade.listShippingLocations(locationRepository.getAll),
@@ -280,7 +262,6 @@ async function createContainer() {
       BookingServiceFacade.requestPossibleRoutesForCargo(bookingService.requestPossibleRoutesForCargo, tid),
   };
 
-  // 7. Sample data (in-memory only — other drivers need a migration/seed script)
   if (dbDriver === 'inmemory') {
     await SampleDataGenerator.generate(
       locationRepository.store,
@@ -306,4 +287,4 @@ async function createContainer() {
   };
 }
 
-module.exports = { createContainer };
+export { createContainer };

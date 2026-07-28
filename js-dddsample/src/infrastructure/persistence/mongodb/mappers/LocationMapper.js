@@ -1,20 +1,8 @@
-'use strict';
-
-const Location  = require('../../../../domain/model/location/Location');
-const UnLocode  = require('../../../../domain/model/location/UnLocode');
-
-/**
- * Converts between Location domain object and MongoDB document.
- *
- * Document shape:
- * { _id: "CNHKG", name: "Hongkong" }
- */
+import Location from '../../../../domain/model/location/Location.js';
+import UnLocode from '../../../../domain/model/location/UnLocode.js';
 
 function toDocument(location) {
-  return {
-    _id:  location.unLocode().idString(),
-    name: location.name(),
-  };
+  return { _id: location.unLocode().idString(), name: location.name() };
 }
 
 function toDomain(doc) {
@@ -22,4 +10,4 @@ function toDomain(doc) {
   return Location(UnLocode(doc._id), doc.name);
 }
 
-module.exports = { toDocument, toDomain };
+export { toDocument, toDomain };

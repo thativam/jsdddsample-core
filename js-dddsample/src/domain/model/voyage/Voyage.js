@@ -1,12 +1,7 @@
-'use strict';
+import VoyageNumber from './VoyageNumber.js';
+import Schedule from './Schedule.js';
+import CarrierMovement from './CarrierMovement.js';
 
-const VoyageNumber  = require('./VoyageNumber');
-const Schedule      = require('./Schedule');
-const CarrierMovement = require('./CarrierMovement');
-
-/**
- * A Voyage — aggregate root.
- */
 function Voyage(voyageNumber, schedule) {
   if (!voyageNumber) throw new Error('Voyage number is required');
   if (!schedule) throw new Error('Schedule is required');
@@ -26,9 +21,6 @@ function Voyage(voyageNumber, schedule) {
 
 Voyage.NONE = Voyage(VoyageNumber(''), Schedule.EMPTY);
 
-/**
- * Builder for constructing Voyage aggregates.
- */
 function VoyageBuilder(voyageNumber, departureLocation) {
   if (!voyageNumber) throw new Error('Voyage number is required');
   if (!departureLocation) throw new Error('Departure location is required');
@@ -51,4 +43,4 @@ function VoyageBuilder(voyageNumber, departureLocation) {
 
 Voyage.Builder = VoyageBuilder;
 
-module.exports = Voyage;
+export default Voyage;

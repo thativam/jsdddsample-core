@@ -1,31 +1,28 @@
-'use strict';
+import * as BookingService           from '../../src/application/BookingService.js';
+import * as HandlingEventService     from '../../src/application/HandlingEventService.js';
+import * as CargoInspectionService   from '../../src/application/CargoInspectionService.js';
+import CargoFactory             from '../../src/domain/model/cargo/CargoFactory.js';
+import HandlingEventFactory     from '../../src/domain/model/handling/HandlingEventFactory.js';
+import * as ExternalRoutingService   from '../../src/infrastructure/routing/ExternalRoutingService.js';
+import * as GraphTraversalService    from '../../src/infrastructure/routing/GraphTraversalService.js';
+import * as GraphDAOStub             from '../../src/infrastructure/routing/GraphDAOStub.js';
+import * as SynchronousApplicationEvents from '../../src/infrastructure/messaging/SynchronousApplicationEvents.js';
 
-const BookingService           = require('../../src/application/BookingService');
-const HandlingEventService     = require('../../src/application/HandlingEventService');
-const CargoInspectionService   = require('../../src/application/CargoInspectionService');
-const CargoFactory             = require('../../src/domain/model/cargo/CargoFactory');
-const HandlingEventFactory     = require('../../src/domain/model/handling/HandlingEventFactory');
-const ExternalRoutingService   = require('../../src/infrastructure/routing/ExternalRoutingService');
-const GraphTraversalService    = require('../../src/infrastructure/routing/GraphTraversalService');
-const GraphDAOStub             = require('../../src/infrastructure/routing/GraphDAOStub');
-const SynchronousApplicationEvents = require('../../src/infrastructure/messaging/SynchronousApplicationEvents');
+import CargoRepositoryInMem         from '../../src/infrastructure/persistence/inmemory/CargoRepositoryInMem.js';
+import HandlingEventRepositoryInMem from '../../src/infrastructure/persistence/inmemory/HandlingEventRepositoryInMem.js';
+import LocationRepositoryInMem      from '../../src/infrastructure/persistence/inmemory/LocationRepositoryInMem.js';
+import VoyageRepositoryInMem        from '../../src/infrastructure/persistence/inmemory/VoyageRepositoryInMem.js';
 
-const CargoRepositoryInMem         = require('../../src/infrastructure/persistence/inmemory/CargoRepositoryInMem');
-const HandlingEventRepositoryInMem = require('../../src/infrastructure/persistence/inmemory/HandlingEventRepositoryInMem');
-const LocationRepositoryInMem      = require('../../src/infrastructure/persistence/inmemory/LocationRepositoryInMem');
-const VoyageRepositoryInMem        = require('../../src/infrastructure/persistence/inmemory/VoyageRepositoryInMem');
+import UnLocode          from '../../src/domain/model/location/UnLocode.js';
+import VoyageNumber      from '../../src/domain/model/voyage/VoyageNumber.js';
+import Itinerary         from '../../src/domain/model/cargo/Itinerary.js';
+import Leg               from '../../src/domain/model/cargo/Leg.js';
+import HandlingEventType from '../../src/domain/model/handling/HandlingEventType.js';
+import RoutingStatus     from '../../src/domain/model/cargo/RoutingStatus.js';
+import TransportStatus   from '../../src/domain/model/cargo/TransportStatus.js';
 
-const UnLocode          = require('../../src/domain/model/location/UnLocode');
-const VoyageNumber      = require('../../src/domain/model/voyage/VoyageNumber');
-const Itinerary         = require('../../src/domain/model/cargo/Itinerary');
-const Leg               = require('../../src/domain/model/cargo/Leg');
-const HandlingEventType = require('../../src/domain/model/handling/HandlingEventType');
-const RoutingStatus     = require('../../src/domain/model/cargo/RoutingStatus');
-const TransportStatus   = require('../../src/domain/model/cargo/TransportStatus');
-
-const { HONGKONG, STOCKHOLM, NEWYORK, CHICAGO } =
-  require('../../src/infrastructure/sampledata/SampleLocations');
-const { v100, v200, v300 } = require('../../src/infrastructure/sampledata/SampleVoyages');
+import { HONGKONG, STOCKHOLM, NEWYORK, CHICAGO } from '../../src/infrastructure/sampledata/SampleLocations.js';
+import { v100, v200, v300 } from '../../src/infrastructure/sampledata/SampleVoyages.js';
 
 let cargoRepo, handlingEventRepo, locationRepo, voyageRepo;
 let bookingService, handlingEventService, applicationEvents;

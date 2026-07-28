@@ -1,10 +1,3 @@
-'use strict';
-
-/**
- * Assembles CargoRoutingDTO from a Cargo domain object.
- * Pure top-level function — no dependencies, no factory wrapper.
- */
-
 function toDTO(cargo) {
   const legs = [];
   const itinerary = cargo.itinerary();
@@ -30,4 +23,4 @@ function toDTO(cargo) {
   };
 }
 
-module.exports = { toDTO };
+export { toDTO };

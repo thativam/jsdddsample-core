@@ -1,8 +1,3 @@
-'use strict';
-
-/**
- * Voyage number — value object.
- */
 function VoyageNumber(number) {
   if (number === undefined || number === null) throw new Error('Voyage number may not be null');
   const _number = String(number);
@@ -17,4 +12,4 @@ function VoyageNumber(number) {
   return { idString, sameValueAs, equals, toString };
 }
 
-module.exports = VoyageNumber;
+export default VoyageNumber;

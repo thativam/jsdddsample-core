@@ -1,10 +1,5 @@
-'use strict';
+import HandlingHistory from '../../../domain/model/handling/HandlingHistory.js';
 
-const HandlingHistory = require('../../../domain/model/handling/HandlingHistory');
-
-/**
- * In-memory HandlingEvent repository — implements HandlingEventRepository port (async).
- */
 function HandlingEventRepositoryInMem() {
   const _events = [];
 
@@ -20,4 +15,4 @@ function HandlingEventRepositoryInMem() {
   return { store, lookupHandlingHistoryOfCargo };
 }
 
-module.exports = HandlingEventRepositoryInMem;
+export default HandlingEventRepositoryInMem;

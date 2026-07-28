@@ -1,19 +1,10 @@
-'use strict';
+import Voyage          from '../../../domain/model/voyage/Voyage.js';
+import VoyageNumber    from '../../../domain/model/voyage/VoyageNumber.js';
+import Schedule        from '../../../domain/model/voyage/Schedule.js';
+import CarrierMovement from '../../../domain/model/voyage/CarrierMovement.js';
+import UnLocode        from '../../../domain/model/location/UnLocode.js';
 
-const Voyage          = require('../../../domain/model/voyage/Voyage');
-const VoyageNumber    = require('../../../domain/model/voyage/VoyageNumber');
-const Schedule        = require('../../../domain/model/voyage/Schedule');
-const CarrierMovement = require('../../../domain/model/voyage/CarrierMovement');
-const UnLocode        = require('../../../domain/model/location/UnLocode');
-
-/**
- * MySQL Voyage repository using mysql2/promise pool.
- *
- * @param {import('mysql2/promise').Pool} pool
- * @param {Function} findLocation - async (UnLocode) => Location
- */
 function VoyageRepositoryMySQL(pool, findLocation) {
-
   async function find(voyageNumber) {
     const [voyageRows] = await pool.execute(
       'SELECT voyage_number FROM voyages WHERE voyage_number = ?',
@@ -67,4 +58,4 @@ function VoyageRepositoryMySQL(pool, findLocation) {
   return { find, store };
 }
 
-module.exports = VoyageRepositoryMySQL;
+export default VoyageRepositoryMySQL;

@@ -1,13 +1,3 @@
-'use strict';
-
-/**
- * Graph traversal service — all top-level independent functions.
- * findShortestPath receives individual listAllNodes and getTransitEdge callbacks
- * instead of a DAO object.
- *
- * Mirrors com.pathfinder.internal.GraphTraversalServiceImpl.
- */
-
 function nextDate(date) {
   const offset = (24 * 60 + Math.floor(Math.random() * 1000) - 500) * 60 * 1000;
   return new Date(date.getTime() + offset);
@@ -43,4 +33,4 @@ function findShortestPath(listAllNodes, getTransitEdge, originNode, destinationN
   return candidates;
 }
 
-module.exports = { findShortestPath };
+export { findShortestPath };

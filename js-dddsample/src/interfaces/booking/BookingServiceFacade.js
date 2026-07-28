@@ -1,14 +1,7 @@
-'use strict';
-
-const TrackingId = require('../../domain/model/cargo/TrackingId');
-const UnLocode   = require('../../domain/model/location/UnLocode');
-const CargoRoutingDTOAssembler       = require('./assembler/CargoRoutingDTOAssembler');
-const ItineraryCandidateDTOAssembler = require('./assembler/ItineraryCandidateDTOAssembler');
-
-/**
- * Facade over BookingService for the web/interface layer — all functions async.
- * Each function receives only the individual callbacks it needs.
- */
+import TrackingId from '../../domain/model/cargo/TrackingId.js';
+import UnLocode   from '../../domain/model/location/UnLocode.js';
+import { toDTO as cargoToDTO }               from './assembler/CargoRoutingDTOAssembler.js';
+import { toDTO as itinToDTO, fromDTO as itinFromDTO } from './assembler/ItineraryCandidateDTOAssembler.js';
 
 async function listShippingLocations(getAllLocations) {
   const locations = await getAllLocations();
@@ -28,11 +21,11 @@ async function bookNewCargo(bookNewCargoFn, origin, destination, arrivalDeadline
 async function loadCargoForRouting(findCargo, trackingId) {
   const cargo = await findCargo(TrackingId(trackingId));
   if (!cargo) return null;
-  return CargoRoutingDTOAssembler.toDTO(cargo);
+  return cargoToDTO(cargo);
 }
 
 async function assignCargoToRoute(assignCargoFn, findVoyage, findLocation, trackingIdStr, routeCandidateDTO) {
-  const itinerary = await ItineraryCandidateDTOAssembler.fromDTO(routeCandidateDTO, findVoyage, findLocation);
+  const itinerary = await itinFromDTO(routeCandidateDTO, findVoyage, findLocation);
   await assignCargoFn(itinerary, TrackingId(trackingIdStr));
 }
 
@@ -42,12 +35,12 @@ async function changeDestination(changeDestFn, trackingId, destinationUnLocode) 
 
 async function listAllCargos(getAllCargos) {
   const cargos = await getAllCargos();
-  return cargos.map(c => CargoRoutingDTOAssembler.toDTO(c));
+  return cargos.map(c => cargoToDTO(c));
 }
 
 async function requestPossibleRoutesForCargo(requestRoutesFn, trackingId) {
   const itineraries = await requestRoutesFn(TrackingId(trackingId));
-  return itineraries.map(it => ItineraryCandidateDTOAssembler.toDTO(it));
+  return itineraries.map(it => itinToDTO(it));
 }
 
-module.exports = { listShippingLocations, bookNewCargo, loadCargoForRouting, assignCargoToRoute, changeDestination, listAllCargos, requestPossibleRoutesForCargo };
+export { listShippingLocations, bookNewCargo, loadCargoForRouting, assignCargoToRoute, changeDestination, listAllCargos, requestPossibleRoutesForCargo };

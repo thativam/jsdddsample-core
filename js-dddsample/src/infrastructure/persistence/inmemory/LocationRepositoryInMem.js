@@ -1,11 +1,5 @@
-'use strict';
+import * as SampleLocations from '../../sampledata/SampleLocations.js';
 
-const SampleLocations = require('../../sampledata/SampleLocations');
-
-/**
- * In-memory Location repository — implements LocationRepository port (async).
- * Pre-seeded with sample locations.
- */
 function LocationRepositoryInMem() {
   const _store = new Map();
   for (const loc of SampleLocations.getAll()) {
@@ -27,4 +21,4 @@ function LocationRepositoryInMem() {
   return { find, getAll, store };
 }
 
-module.exports = LocationRepositoryInMem;
+export default LocationRepositoryInMem;

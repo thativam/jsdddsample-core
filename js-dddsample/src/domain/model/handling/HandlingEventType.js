@@ -1,9 +1,3 @@
-'use strict';
-
-/**
- * Handling event type enumeration.
- * voyageRequired indicates whether a voyage association is needed.
- */
 const HandlingEventType = Object.freeze({
   LOAD:     { name: 'LOAD',     voyageRequired: true  },
   UNLOAD:   { name: 'UNLOAD',   voyageRequired: true  },
@@ -11,7 +5,6 @@ const HandlingEventType = Object.freeze({
   CLAIM:    { name: 'CLAIM',    voyageRequired: false },
   CUSTOMS:  { name: 'CUSTOMS',  voyageRequired: false },
 
-  /** @param {string} name @returns {{name:string, voyageRequired:boolean}} */
   valueOf(name) {
     const t = HandlingEventType[name];
     if (!t || typeof t !== 'object') throw new Error(`${name} is not a valid handling event type`);
@@ -29,4 +22,4 @@ const HandlingEventType = Object.freeze({
   },
 });
 
-module.exports = HandlingEventType;
+export default HandlingEventType;

@@ -1,4 +1,5 @@
-'use strict';
+import CargoBookingPage from './CargoBookingPage.js';
+import CargoDetailsPage from './CargoDetailsPage.js';
 
 /**
  * AdminPage — Page Object for the admin cargo list.
@@ -21,7 +22,6 @@ function AdminPage(page) {
 
     /** Click "Book new cargo" → CargoBookingPage */
     async bookNewCargo() {
-      const CargoBookingPage = require('./CargoBookingPage');
       await page.click('a[href*="register.html"]');
       await page.waitForSelector('#bookForm', { state: 'visible', timeout: 6000 });
       // Wait for the location dropdowns to be populated
@@ -37,7 +37,6 @@ function AdminPage(page) {
 
     /** Click a tracking ID link → CargoDetailsPage */
     async showDetailsFor(trackingId) {
-      const CargoDetailsPage = require('./CargoDetailsPage');
       await page.click(`a[href*="trackingId=${trackingId}"]`);
       await page.waitForURL('**/show.html**', { timeout: 6000 });
       // Wait for fetch to populate caption
@@ -53,4 +52,4 @@ function AdminPage(page) {
   };
 }
 
-module.exports = AdminPage;
+export default AdminPage;

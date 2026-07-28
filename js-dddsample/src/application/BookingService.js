@@ -1,11 +1,4 @@
-'use strict';
-
-const RouteSpecification = require('../domain/model/cargo/RouteSpecification');
-
-/**
- * Booking application service — async top-level independent functions.
- * All repo/factory callbacks are async; this layer awaits them.
- */
+import RouteSpecification from '../domain/model/cargo/RouteSpecification.js';
 
 async function bookNewCargo(createCargo, storeCargo, originUnLocode, destinationUnLocode, arrivalDeadline) {
   const cargo = await createCargo(originUnLocode, destinationUnLocode, arrivalDeadline);
@@ -41,4 +34,4 @@ async function changeDestination(findCargo, findLocation, storeCargo, trackingId
   console.info(`Changed destination for cargo ${trackingId} to ${routeSpec.destination()}`);
 }
 
-module.exports = { bookNewCargo, requestPossibleRoutesForCargo, assignCargoToRoute, changeDestination };
+export { bookNewCargo, requestPossibleRoutesForCargo, assignCargoToRoute, changeDestination };

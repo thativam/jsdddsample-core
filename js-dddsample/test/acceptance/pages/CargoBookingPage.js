@@ -1,4 +1,4 @@
-'use strict';
+import CargoDetailsPage from './CargoDetailsPage.js';
 
 /**
  * CargoBookingPage — Page Object for the new cargo booking form.
@@ -21,7 +21,6 @@ function CargoBookingPage(page) {
 
     /** Submit the booking form → waits for redirect to show.html and content load */
     async book() {
-      const CargoDetailsPage = require('./CargoDetailsPage');
       await page.click('button[type="submit"]');
       // The form handler does window.location.href = /views/admin/show.html?trackingId=...
       await page.waitForURL('**/show.html**', { timeout: 8000 });
@@ -38,4 +37,4 @@ function CargoBookingPage(page) {
   };
 }
 
-module.exports = CargoBookingPage;
+export default CargoBookingPage;

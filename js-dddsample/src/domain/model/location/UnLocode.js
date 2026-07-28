@@ -1,8 +1,3 @@
-'use strict';
-
-/**
- * United Nations Location Code — value object.
- */
 function UnLocode(countryAndLocation) {
   const VALID_PATTERN = /^[a-zA-Z]{2}[a-zA-Z2-9]{3}$/;
   if (!countryAndLocation) throw new Error('Country and location may not be null');
@@ -21,4 +16,4 @@ function UnLocode(countryAndLocation) {
   return { idString, sameValueAs, equals, toString };
 }
 
-module.exports = UnLocode;
+export default UnLocode;

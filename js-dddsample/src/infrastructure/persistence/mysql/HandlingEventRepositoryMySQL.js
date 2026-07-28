@@ -1,22 +1,11 @@
-'use strict';
+import HandlingEvent     from '../../../domain/model/handling/HandlingEvent.js';
+import HandlingEventType from '../../../domain/model/handling/HandlingEventType.js';
+import HandlingHistory   from '../../../domain/model/handling/HandlingHistory.js';
+import TrackingId        from '../../../domain/model/cargo/TrackingId.js';
+import UnLocode          from '../../../domain/model/location/UnLocode.js';
+import VoyageNumber      from '../../../domain/model/voyage/VoyageNumber.js';
 
-const HandlingEvent     = require('../../../domain/model/handling/HandlingEvent');
-const HandlingEventType = require('../../../domain/model/handling/HandlingEventType');
-const HandlingHistory   = require('../../../domain/model/handling/HandlingHistory');
-const TrackingId        = require('../../../domain/model/cargo/TrackingId');
-const UnLocode          = require('../../../domain/model/location/UnLocode');
-const VoyageNumber      = require('../../../domain/model/voyage/VoyageNumber');
-
-/**
- * MySQL HandlingEvent repository using mysql2/promise pool.
- *
- * @param {import('mysql2/promise').Pool} pool
- * @param {Function} findCargo    - async (TrackingId) => Cargo
- * @param {Function} findLocation - async (UnLocode) => Location
- * @param {Function} findVoyage   - async (VoyageNumber) => Voyage | null
- */
 function HandlingEventRepositoryMySQL(pool, findCargo, findLocation, findVoyage) {
-
   async function store(event) {
     const voyageNum = event.voyage() && event.voyage().voyageNumber().idString() !== ''
       ? event.voyage().voyageNumber().idString()
@@ -47,4 +36,4 @@ function HandlingEventRepositoryMySQL(pool, findCargo, findLocation, findVoyage)
   return { store, lookupHandlingHistoryOfCargo };
 }
 
-module.exports = HandlingEventRepositoryMySQL;
+export default HandlingEventRepositoryMySQL;

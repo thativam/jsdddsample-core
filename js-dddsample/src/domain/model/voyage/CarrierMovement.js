@@ -1,8 +1,3 @@
-'use strict';
-
-/**
- * A single movement of a carrier between two locations.
- */
 function CarrierMovement(departureLocation, arrivalLocation, departureTime, arrivalTime) {
   if (!departureLocation || !arrivalLocation || !departureTime || !arrivalTime) {
     throw new Error('All CarrierMovement fields are required');
@@ -28,4 +23,4 @@ function CarrierMovement(departureLocation, arrivalLocation, departureTime, arri
   return { departureLocation: departureLocation_, arrivalLocation: arrivalLocation_, departureTime: departureTime_, arrivalTime: arrivalTime_, sameValueAs, equals };
 }
 
-module.exports = CarrierMovement;
+export default CarrierMovement;

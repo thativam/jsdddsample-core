@@ -1,19 +1,12 @@
-'use strict';
+import RoutingStatus     from './RoutingStatus.js';
+import TransportStatus   from './TransportStatus.js';
+import HandlingActivity  from './HandlingActivity.js';
+import Location          from '../location/Location.js';
+import Voyage            from '../voyage/Voyage.js';
+import HandlingEventType from '../handling/HandlingEventType.js';
 
-const RoutingStatus     = require('./RoutingStatus');
-const TransportStatus   = require('./TransportStatus');
-const HandlingActivity  = require('./HandlingActivity');
-const Location          = require('../location/Location');
-const Voyage            = require('../voyage/Voyage');
-const HandlingEventType = require('../handling/HandlingEventType');
-
-/**
- * The actual transportation state of the cargo — immutable value object.
- * Re-derived from (lastEvent + itinerary + routeSpec) on every state change.
- */
 function Delivery(lastEvent, itinerary, routeSpecification) {
 
-  // ── internal derivation ───────────────────────────────────────────────────
   function calcTransportStatus() {
     if (!lastEvent) return TransportStatus.NOT_RECEIVED;
     switch (lastEvent.type()) {
@@ -106,7 +99,6 @@ function Delivery(lastEvent, itinerary, routeSpecification) {
   const _nextExpectedActivity = calcNextExpectedActivity();
   const _isUnloadedAtDest     = calcUnloadedAtDestination();
 
-  // ── public API ────────────────────────────────────────────────────────────
   function transportStatus()        { return _transportStatus; }
   function lastKnownLocation()      { return _lastKnown || Location.UNKNOWN; }
   function currentVoyage()          { return _currentVoyage || Voyage.NONE; }
@@ -141,4 +133,4 @@ Delivery.derivedFrom = function(routeSpec, itinerary, handlingHistory) {
   return Delivery(lastEvent, itinerary, routeSpec);
 };
 
-module.exports = Delivery;
+export default Delivery;

@@ -1,8 +1,5 @@
-'use strict';
+import { Specification, withCombinators } from '../../../src/domain/shared/Specification.js';
 
-const { Specification, withCombinators } = require('../../../src/domain/shared/Specification');
-
-// Factory-style spec implementations (no class)
 const AlwaysTrue  = Specification(() => true);
 const AlwaysFalse = Specification(() => false);
 const GreaterThan = (n) => Specification((t) => t > n);

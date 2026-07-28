@@ -1,11 +1,5 @@
-'use strict';
+import * as SampleVoyages from '../../sampledata/SampleVoyages.js';
 
-const SampleVoyages = require('../../sampledata/SampleVoyages');
-
-/**
- * In-memory Voyage repository — implements VoyageRepository port (async).
- * Pre-seeded with sample voyages.
- */
 function VoyageRepositoryInMem() {
   const _store = new Map();
   for (const v of SampleVoyages.getAll()) {
@@ -23,4 +17,4 @@ function VoyageRepositoryInMem() {
   return { find, store };
 }
 
-module.exports = VoyageRepositoryInMem;
+export default VoyageRepositoryInMem;
