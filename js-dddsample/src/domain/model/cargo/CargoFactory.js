@@ -1,11 +1,14 @@
 import Cargo              from './Cargo.js';
 import RouteSpecification from './RouteSpecification.js';
+import { cargoRepository, locationRepository } from '../../../ServiceContext.js';
 
-async function createCargo(nextTrackingId, findLocation, originUnLocode, destinationUnLocode, arrivalDeadline) {
-  const trackingId  = await nextTrackingId();
-  const origin      = await findLocation(originUnLocode);
-  const destination = await findLocation(destinationUnLocode);
-  const routeSpec   = RouteSpecification(origin, destination, arrivalDeadline);
+async function createCargo(originUnLocode, destinationUnLocode, arrivalDeadline) {
+  const trackingId = await cargoRepository.nextTrackingId();
+  const [origin, destination] = await Promise.all([
+    locationRepository.find(originUnLocode),
+    locationRepository.find(destinationUnLocode),
+  ]);
+  const routeSpec = RouteSpecification(origin, destination, arrivalDeadline);
   return Cargo(trackingId, routeSpec);
 }
 

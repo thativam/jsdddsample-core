@@ -1,12 +1,12 @@
 import * as BookingService           from '../../src/application/BookingService.js';
 import * as HandlingEventService     from '../../src/application/HandlingEventService.js';
 import * as CargoInspectionService   from '../../src/application/CargoInspectionService.js';
-import CargoFactory             from '../../src/domain/model/cargo/CargoFactory.js';
-import HandlingEventFactory     from '../../src/domain/model/handling/HandlingEventFactory.js';
+import CargoFactory                  from '../../src/domain/model/cargo/CargoFactory.js';
 import * as ExternalRoutingService   from '../../src/infrastructure/routing/ExternalRoutingService.js';
 import * as GraphTraversalService    from '../../src/infrastructure/routing/GraphTraversalService.js';
 import * as GraphDAOStub             from '../../src/infrastructure/routing/GraphDAOStub.js';
 import * as SynchronousApplicationEvents from '../../src/infrastructure/messaging/SynchronousApplicationEvents.js';
+import { configure as configureServiceContext } from '../../src/ServiceContext.js';
 
 import CargoRepositoryInMem         from '../../src/infrastructure/persistence/inmemory/CargoRepositoryInMem.js';
 import HandlingEventRepositoryInMem from '../../src/infrastructure/persistence/inmemory/HandlingEventRepositoryInMem.js';
@@ -25,7 +25,7 @@ import { HONGKONG, STOCKHOLM, NEWYORK, CHICAGO } from '../../src/infrastructure/
 import { v100, v200, v300 } from '../../src/infrastructure/sampledata/SampleVoyages.js';
 
 let cargoRepo, handlingEventRepo, locationRepo, voyageRepo;
-let bookingService, handlingEventService, applicationEvents;
+let bookingService, applicationEvents;
 
 beforeEach(() => {
   cargoRepo         = CargoRepositoryInMem();
@@ -42,14 +42,17 @@ beforeEach(() => {
     cargoHasArrived:     (c) => SynchronousApplicationEvents.cargoHasArrived(eventsRef, c),
   };
 
-  const boundCreateCargo = (o, d, dl) =>
-    CargoFactory.createCargo(cargoRepo.nextTrackingId, locationRepo.find, o, d, dl);
+  configureServiceContext(
+    {
+      cargoRepository:         cargoRepo,
+      handlingEventRepository: handlingEventRepo,
+      locationRepository:      locationRepo,
+      voyageRepository:        voyageRepo,
+    },
+    applicationEvents
+  );
 
-  const boundCreateHandlingEvent = (reg, comp, tid, vn, ul, t) =>
-    HandlingEventFactory.createHandlingEvent(
-      cargoRepo.find, voyageRepo.find, locationRepo.find,
-      reg, comp, tid, vn, ul, t
-    );
+  applicationEvents.setCargoInspectionService({ inspectCargo: CargoInspectionService.inspectCargo });
 
   const boundFindShortestPath = (o, d, lim) =>
     GraphTraversalService.findShortestPath(GraphDAOStub.listAllNodes, GraphDAOStub.getTransitEdge, o, d, lim);
@@ -57,21 +60,9 @@ beforeEach(() => {
   const boundFetchRoutes = (spec) =>
     ExternalRoutingService.fetchRoutesForSpecification(boundFindShortestPath, locationRepo.find, voyageRepo.find, spec);
 
-  const cargoInspectionService = {
-    inspectCargo: (trackingId) =>
-      CargoInspectionService.inspectCargo(
-        cargoRepo.find, cargoRepo.store,
-        handlingEventRepo.lookupHandlingHistoryOfCargo,
-        applicationEvents.cargoWasMisdirected,
-        applicationEvents.cargoHasArrived,
-        trackingId
-      ),
-  };
-  applicationEvents.setCargoInspectionService(cargoInspectionService);
-
   bookingService = {
     bookNewCargo: (o, d, dl) =>
-      BookingService.bookNewCargo(boundCreateCargo, cargoRepo.store, o, d, dl),
+      BookingService.bookNewCargo(CargoFactory.createCargo, cargoRepo.store, o, d, dl),
     requestPossibleRoutesForCargo: (tid) =>
       BookingService.requestPossibleRoutesForCargo(cargoRepo.find, boundFetchRoutes, tid),
     assignCargoToRoute: (itin, tid) =>
@@ -79,20 +70,10 @@ beforeEach(() => {
     changeDestination: (tid, ul) =>
       BookingService.changeDestination(cargoRepo.find, locationRepo.find, cargoRepo.store, tid, ul),
   };
-
-  handlingEventService = {
-    registerHandlingEvent: (ct, tid, vn, ul, t) =>
-      HandlingEventService.registerHandlingEvent(
-        handlingEventRepo.store,
-        applicationEvents.cargoWasHandled,
-        boundCreateHandlingEvent,
-        ct, tid, vn, ul, t
-      ),
-  };
 });
 
 async function register(trackingId, type, location, voyage, date) {
-  await handlingEventService.registerHandlingEvent(
+  await HandlingEventService.registerHandlingEvent(
     new Date(date),
     trackingId,
     voyage ? VoyageNumber(voyage) : null,

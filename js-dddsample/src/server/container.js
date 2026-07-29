@@ -1,3 +1,5 @@
+import { configure as configureServiceContext } from '../ServiceContext.js';
+
 import HandlingEventFactory  from '../domain/model/handling/HandlingEventFactory.js';
 import CargoFactory          from '../domain/model/cargo/CargoFactory.js';
 
@@ -65,7 +67,7 @@ async function buildMongoRepos() {
 }
 
 async function buildMySQLRepos() {
-  const mysql2                               = (await import('mysql2/promise')).default;
+  const mysql2                                     = (await import('mysql2/promise')).default;
   const { default: CargoRepositoryMySQL }         = await import('../infrastructure/persistence/mysql/CargoRepositoryMySQL.js');
   const { default: HandlingEventRepositoryMySQL } = await import('../infrastructure/persistence/mysql/HandlingEventRepositoryMySQL.js');
   const { default: LocationRepositoryMySQL }      = await import('../infrastructure/persistence/mysql/LocationRepositoryMySQL.js');
@@ -104,22 +106,16 @@ async function buildMySQLRepos() {
 // ── Messaging factories ───────────────────────────────────────────────────────
 
 function buildLocalEvents() {
-  const AsyncApplicationEvents = { createEmitter: null, on: null, emit: null,
-    receivedHandlingEventRegistrationAttempt: null, cargoWasHandled: null,
-    cargoWasMisdirected: null, cargoHasArrived: null };
-
-  // Inline to avoid top-level await
   return import('../infrastructure/messaging/AsyncApplicationEvents.js').then(mod => {
-    Object.assign(AsyncApplicationEvents, mod);
-    const _emitter = AsyncApplicationEvents.createEmitter();
+    const _emitter = mod.createEmitter();
     const applicationEvents = {
-      on:   (event, handler) => AsyncApplicationEvents.on(_emitter, event, handler),
-      emit: (event, ...args) => AsyncApplicationEvents.emit(_emitter, event, ...args),
+      on:   (event, handler) => mod.on(_emitter, event, handler),
+      emit: (event, ...args) => mod.emit(_emitter, event, ...args),
       receivedHandlingEventRegistrationAttempt: (attempt) =>
-        AsyncApplicationEvents.receivedHandlingEventRegistrationAttempt(_emitter, attempt),
-      cargoWasHandled:     (event) => AsyncApplicationEvents.cargoWasHandled(_emitter, event),
-      cargoWasMisdirected: (cargo) => AsyncApplicationEvents.cargoWasMisdirected(_emitter, cargo),
-      cargoHasArrived:     (cargo) => AsyncApplicationEvents.cargoHasArrived(_emitter, cargo),
+        mod.receivedHandlingEventRegistrationAttempt(_emitter, attempt),
+      cargoWasHandled:     (event) => mod.cargoWasHandled(_emitter, event),
+      cargoWasMisdirected: (cargo) => mod.cargoWasMisdirected(_emitter, cargo),
+      cargoHasArrived:     (cargo) => mod.cargoHasArrived(_emitter, cargo),
     };
     return { applicationEvents, mq: null, disconnect: async () => {} };
   });
@@ -148,18 +144,11 @@ async function createContainer() {
     : await buildLocalEvents();
   const { applicationEvents } = mqHandle;
 
-  const boundCreateCargo = (originUnLocode, destinationUnLocode, arrivalDeadline) =>
-    CargoFactory.createCargo(
-      () => cargoRepository.nextTrackingId(),
-      locationRepository.find,
-      originUnLocode, destinationUnLocode, arrivalDeadline
-    );
+  // Populate ServiceContext — from this point, createCargo / registerHandlingEvent /
+  // inspectCargo can be called with value-only parameters.
+  configureServiceContext(repos, applicationEvents);
 
-  const boundCreateHandlingEvent = (regTime, compTime, trackingId, voyageNum, unlocode, type) =>
-    HandlingEventFactory.createHandlingEvent(
-      cargoRepository.find, voyageRepository.find, locationRepository.find,
-      regTime, compTime, trackingId, voyageNum, unlocode, type
-    );
+  // ── Routing ──────────────────────────────────────────────────────────────────
 
   const boundFindShortestPath = (origin, dest, lim) =>
     GraphTraversalService.findShortestPath(GraphDAOStub.listAllNodes, GraphDAOStub.getTransitEdge, origin, dest, lim);
@@ -169,9 +158,11 @@ async function createContainer() {
       boundFindShortestPath, locationRepository.find, voyageRepository.find, routeSpec
     );
 
+  // ── Application services ──────────────────────────────────────────────────────
+
   const bookingService = {
     bookNewCargo: (o, d, dl) =>
-      BookingService.bookNewCargo(boundCreateCargo, cargoRepository.store, o, d, dl),
+      BookingService.bookNewCargo(CargoFactory.createCargo, cargoRepository.store, o, d, dl),
     requestPossibleRoutesForCargo: (tid) =>
       BookingService.requestPossibleRoutesForCargo(cargoRepository.find, boundFetchRoutes, tid),
     assignCargoToRoute: (itin, tid) =>
@@ -181,22 +172,14 @@ async function createContainer() {
   };
 
   const handlingEventService = {
-    registerHandlingEvent: (ct, tid, vn, ul, t) =>
-      HandlingEventService.registerHandlingEvent(
-        handlingEventRepository.store, applicationEvents.cargoWasHandled, boundCreateHandlingEvent,
-        ct, tid, vn, ul, t
-      ),
+    registerHandlingEvent: HandlingEventService.registerHandlingEvent,
   };
 
   const cargoInspectionService = {
-    inspectCargo: (trackingId) =>
-      CargoInspectionService.inspectCargo(
-        cargoRepository.find, cargoRepository.store,
-        handlingEventRepository.lookupHandlingHistoryOfCargo,
-        applicationEvents.cargoWasMisdirected, applicationEvents.cargoHasArrived,
-        trackingId
-      ),
+    inspectCargo: CargoInspectionService.inspectCargo,
   };
+
+  // ── Event subscriptions ───────────────────────────────────────────────────────
 
   if (mqDriver === 'rabbitmq') {
     const { mq } = mqHandle;
@@ -207,7 +190,7 @@ async function createContainer() {
 
     await mq.onHandlingEventAttempt(async (payload) => {
       try {
-        await handlingEventService.registerHandlingEvent(
+        await HandlingEventService.registerHandlingEvent(
           new Date(payload.completionTime),
           TrackingId(payload.trackingId),
           payload.voyageNumber ? VoyageNumber(payload.voyageNumber) : null,
@@ -220,7 +203,7 @@ async function createContainer() {
     await mq.onCargoHandled(async (payload) => {
       try {
         const { default: TrackingId2 } = await import('../domain/model/cargo/TrackingId.js');
-        await cargoInspectionService.inspectCargo(TrackingId2(payload.cargoTrackingId));
+        await CargoInspectionService.inspectCargo(TrackingId2(payload.cargoTrackingId));
       } catch (e) { console.error('[RabbitMQ:cargoHandledQueue]', e.message); }
     });
 
@@ -230,13 +213,13 @@ async function createContainer() {
   } else {
     applicationEvents.on('handlingEventQueue', async (attempt) => {
       try {
-        await handlingEventService.registerHandlingEvent(
+        await HandlingEventService.registerHandlingEvent(
           attempt.completionTime, attempt.trackingId, attempt.voyageNumber, attempt.unLocode, attempt.type
         );
       } catch (e) { console.error('[handlingEventQueue]', e.message); }
     });
     applicationEvents.on('cargoHandledQueue', async (event) => {
-      try { await cargoInspectionService.inspectCargo(event.cargo().trackingId()); }
+      try { await CargoInspectionService.inspectCargo(event.cargo().trackingId()); }
       catch (e) { console.error('[cargoHandledQueue]', e.message); }
     });
     applicationEvents.on('misdirectedCargoQueue', (cargo) =>
@@ -244,6 +227,8 @@ async function createContainer() {
     applicationEvents.on('deliveredCargoQueue', (cargo) =>
       console.info(`[deliveredCargoQueue] Cargo ${cargo.trackingId().idString()} arrived`));
   }
+
+  // ── Facade ────────────────────────────────────────────────────────────────────
 
   const bookingServiceFacade = {
     listShippingLocations: () =>
@@ -262,7 +247,14 @@ async function createContainer() {
       BookingServiceFacade.requestPossibleRoutesForCargo(bookingService.requestPossibleRoutesForCargo, tid),
   };
 
+  // ── Sample data ───────────────────────────────────────────────────────────────
+
   if (dbDriver === 'inmemory') {
+    const boundCreateHandlingEvent = (regTime, compTime, trackingId, voyageNum, unlocode, type) =>
+      HandlingEventFactory.createHandlingEvent(
+        cargoRepository.find, voyageRepository.find, locationRepository.find,
+        regTime, compTime, trackingId, voyageNum, unlocode, type
+      );
     await SampleDataGenerator.generate(
       locationRepository.store,
       voyageRepository.store,

@@ -1,10 +1,15 @@
-async function registerHandlingEvent(storeEvent, emitCargoWasHandled, createHandlingEvent, completionTime, trackingId, voyageNumber, unLocode, type) {
+import HandlingEventFactory from '../domain/model/handling/HandlingEventFactory.js';
+import { cargoRepository, voyageRepository, locationRepository, handlingEventRepository, applicationEvents }
+  from '../ServiceContext.js';
+
+async function registerHandlingEvent(completionTime, trackingId, voyageNumber, unLocode, type) {
   const registrationTime = new Date();
-  const event = await createHandlingEvent(
+  const event = await HandlingEventFactory.createHandlingEvent(
+    cargoRepository.find, voyageRepository.find, locationRepository.find,
     registrationTime, completionTime, trackingId, voyageNumber, unLocode, type
   );
-  await storeEvent(event);
-  emitCargoWasHandled(event);
+  await handlingEventRepository.store(event);
+  applicationEvents.cargoWasHandled(event);
   console.info(`Registered handling event: ${event}`);
 }
 

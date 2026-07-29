@@ -1,11 +1,12 @@
 import * as BookingService         from '../../src/application/BookingService.js';
-import CargoFactory           from '../../src/domain/model/cargo/CargoFactory.js';
+import CargoFactory                from '../../src/domain/model/cargo/CargoFactory.js';
 import * as ExternalRoutingService from '../../src/infrastructure/routing/ExternalRoutingService.js';
 import * as GraphTraversalService  from '../../src/infrastructure/routing/GraphTraversalService.js';
 import * as GraphDAOStub           from '../../src/infrastructure/routing/GraphDAOStub.js';
 import CargoRepositoryInMem        from '../../src/infrastructure/persistence/inmemory/CargoRepositoryInMem.js';
 import LocationRepositoryInMem     from '../../src/infrastructure/persistence/inmemory/LocationRepositoryInMem.js';
 import VoyageRepositoryInMem       from '../../src/infrastructure/persistence/inmemory/VoyageRepositoryInMem.js';
+import { configure as configureServiceContext } from '../../src/ServiceContext.js';
 
 import UnLocode      from '../../src/domain/model/location/UnLocode.js';
 import TrackingId    from '../../src/domain/model/cargo/TrackingId.js';
@@ -20,8 +21,10 @@ function makeService() {
   const locationRepo = LocationRepositoryInMem();
   const voyageRepo   = VoyageRepositoryInMem();
 
-  const boundCreateCargo = (o, d, dl) =>
-    CargoFactory.createCargo(cargoRepo.nextTrackingId, locationRepo.find, o, d, dl);
+  configureServiceContext(
+    { cargoRepository: cargoRepo, locationRepository: locationRepo, voyageRepository: voyageRepo },
+    null
+  );
 
   const boundFindShortestPath = (o, d, lim) =>
     GraphTraversalService.findShortestPath(GraphDAOStub.listAllNodes, GraphDAOStub.getTransitEdge, o, d, lim);
@@ -31,7 +34,7 @@ function makeService() {
 
   const service = {
     bookNewCargo: (o, d, dl) =>
-      BookingService.bookNewCargo(boundCreateCargo, cargoRepo.store, o, d, dl),
+      BookingService.bookNewCargo(CargoFactory.createCargo, cargoRepo.store, o, d, dl),
     requestPossibleRoutesForCargo: (tid) =>
       BookingService.requestPossibleRoutesForCargo(cargoRepo.find, boundFetchRoutes, tid),
     assignCargoToRoute: (itin, tid) =>
