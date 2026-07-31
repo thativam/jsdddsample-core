@@ -1,46 +1,56 @@
 import TrackingId from '../../domain/model/cargo/TrackingId.js';
 import UnLocode   from '../../domain/model/location/UnLocode.js';
-import { toDTO as cargoToDTO }               from './assembler/CargoRoutingDTOAssembler.js';
-import { toDTO as itinToDTO, fromDTO as itinFromDTO } from './assembler/ItineraryCandidateDTOAssembler.js';
+import { cargoRepository, locationRepository } from '../../ServiceContext.js';
+import { toDTO as cargoToDTO }                           from './assembler/CargoRoutingDTOAssembler.js';
+import { toDTO as itinToDTO, fromDTO as itinFromDTO }   from './assembler/ItineraryCandidateDTOAssembler.js';
+import * as BookingService from '../../application/BookingService.js';
 
-async function listShippingLocations(getAllLocations) {
-  const locations = await getAllLocations();
+async function listShippingLocations() {
+  const locations = await locationRepository.getAll();
   return locations.map(loc => ({
     unLocode: loc.unLocode().idString(),
-    name: loc.name(),
+    name:     loc.name(),
   }));
 }
 
-async function bookNewCargo(bookNewCargoFn, origin, destination, arrivalDeadline) {
-  const trackingId = await bookNewCargoFn(
+async function bookNewCargo(origin, destination, arrivalDeadline) {
+  const trackingId = await BookingService.bookNewCargo(
     UnLocode(origin), UnLocode(destination), arrivalDeadline
   );
   return trackingId.idString();
 }
 
-async function loadCargoForRouting(findCargo, trackingId) {
-  const cargo = await findCargo(TrackingId(trackingId));
+async function loadCargoForRouting(trackingId) {
+  const cargo = await cargoRepository.find(TrackingId(trackingId));
   if (!cargo) return null;
   return cargoToDTO(cargo);
 }
 
-async function assignCargoToRoute(assignCargoFn, findVoyage, findLocation, trackingIdStr, routeCandidateDTO) {
-  const itinerary = await itinFromDTO(routeCandidateDTO, findVoyage, findLocation);
-  await assignCargoFn(itinerary, TrackingId(trackingIdStr));
+async function assignCargoToRoute(trackingIdStr, routeCandidateDTO) {
+  const itinerary = await itinFromDTO(routeCandidateDTO);
+  await BookingService.assignCargoToRoute(itinerary, TrackingId(trackingIdStr));
 }
 
-async function changeDestination(changeDestFn, trackingId, destinationUnLocode) {
-  await changeDestFn(TrackingId(trackingId), UnLocode(destinationUnLocode));
+async function changeDestination(trackingId, destinationUnLocode) {
+  await BookingService.changeDestination(TrackingId(trackingId), UnLocode(destinationUnLocode));
 }
 
-async function listAllCargos(getAllCargos) {
-  const cargos = await getAllCargos();
+async function listAllCargos() {
+  const cargos = await cargoRepository.getAll();
   return cargos.map(c => cargoToDTO(c));
 }
 
-async function requestPossibleRoutesForCargo(requestRoutesFn, trackingId) {
-  const itineraries = await requestRoutesFn(TrackingId(trackingId));
+async function requestPossibleRoutesForCargo(trackingId) {
+  const itineraries = await BookingService.requestPossibleRoutesForCargo(TrackingId(trackingId));
   return itineraries.map(it => itinToDTO(it));
 }
 
-export { listShippingLocations, bookNewCargo, loadCargoForRouting, assignCargoToRoute, changeDestination, listAllCargos, requestPossibleRoutesForCargo };
+export {
+  listShippingLocations,
+  bookNewCargo,
+  loadCargoForRouting,
+  assignCargoToRoute,
+  changeDestination,
+  listAllCargos,
+  requestPossibleRoutesForCargo,
+};

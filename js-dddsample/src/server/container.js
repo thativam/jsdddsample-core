@@ -1,17 +1,9 @@
-import { configure as configureServiceContext } from '../ServiceContext.js';
+import { configure as configureServiceContext, configureRouting } from '../ServiceContext.js';
 
-import HandlingEventFactory  from '../domain/model/handling/HandlingEventFactory.js';
-import CargoFactory          from '../domain/model/cargo/CargoFactory.js';
-
-import * as BookingService         from '../application/BookingService.js';
 import * as HandlingEventService   from '../application/HandlingEventService.js';
 import * as CargoInspectionService from '../application/CargoInspectionService.js';
-
-import * as GraphDAOStub           from '../infrastructure/routing/GraphDAOStub.js';
-import * as GraphTraversalService  from '../infrastructure/routing/GraphTraversalService.js';
+import * as BookingService         from '../application/BookingService.js';
 import * as ExternalRoutingService from '../infrastructure/routing/ExternalRoutingService.js';
-
-import * as BookingServiceFacade   from '../interfaces/booking/BookingServiceFacade.js';
 import * as SampleDataGenerator    from '../infrastructure/sampledata/SampleDataGenerator.js';
 
 // ── Repository factories ──────────────────────────────────────────────────────
@@ -144,40 +136,10 @@ async function createContainer() {
     : await buildLocalEvents();
   const { applicationEvents } = mqHandle;
 
-  // Populate ServiceContext — from this point, createCargo / registerHandlingEvent /
-  // inspectCargo can be called with value-only parameters.
+  // Populate ServiceContext — from this point all application/facade/route functions
+  // can be called with value-only parameters.
   configureServiceContext(repos, applicationEvents);
-
-  // ── Routing ──────────────────────────────────────────────────────────────────
-
-  const boundFindShortestPath = (origin, dest, lim) =>
-    GraphTraversalService.findShortestPath(GraphDAOStub.listAllNodes, GraphDAOStub.getTransitEdge, origin, dest, lim);
-
-  const boundFetchRoutes = (routeSpec) =>
-    ExternalRoutingService.fetchRoutesForSpecification(
-      boundFindShortestPath, locationRepository.find, voyageRepository.find, routeSpec
-    );
-
-  // ── Application services ──────────────────────────────────────────────────────
-
-  const bookingService = {
-    bookNewCargo: (o, d, dl) =>
-      BookingService.bookNewCargo(CargoFactory.createCargo, cargoRepository.store, o, d, dl),
-    requestPossibleRoutesForCargo: (tid) =>
-      BookingService.requestPossibleRoutesForCargo(cargoRepository.find, boundFetchRoutes, tid),
-    assignCargoToRoute: (itin, tid) =>
-      BookingService.assignCargoToRoute(cargoRepository.find, cargoRepository.store, itin, tid),
-    changeDestination: (tid, ul) =>
-      BookingService.changeDestination(cargoRepository.find, locationRepository.find, cargoRepository.store, tid, ul),
-  };
-
-  const handlingEventService = {
-    registerHandlingEvent: HandlingEventService.registerHandlingEvent,
-  };
-
-  const cargoInspectionService = {
-    inspectCargo: CargoInspectionService.inspectCargo,
-  };
+  configureRouting(ExternalRoutingService);
 
   // ── Event subscriptions ───────────────────────────────────────────────────────
 
@@ -228,41 +190,10 @@ async function createContainer() {
       console.info(`[deliveredCargoQueue] Cargo ${cargo.trackingId().idString()} arrived`));
   }
 
-  // ── Facade ────────────────────────────────────────────────────────────────────
-
-  const bookingServiceFacade = {
-    listShippingLocations: () =>
-      BookingServiceFacade.listShippingLocations(locationRepository.getAll),
-    bookNewCargo: (o, d, dl) =>
-      BookingServiceFacade.bookNewCargo(bookingService.bookNewCargo, o, d, dl),
-    loadCargoForRouting: (tid) =>
-      BookingServiceFacade.loadCargoForRouting(cargoRepository.find, tid),
-    assignCargoToRoute: (tid, routeDTO) =>
-      BookingServiceFacade.assignCargoToRoute(bookingService.assignCargoToRoute, voyageRepository.find, locationRepository.find, tid, routeDTO),
-    changeDestination: (tid, ul) =>
-      BookingServiceFacade.changeDestination(bookingService.changeDestination, tid, ul),
-    listAllCargos: () =>
-      BookingServiceFacade.listAllCargos(cargoRepository.getAll),
-    requestPossibleRoutesForCargo: (tid) =>
-      BookingServiceFacade.requestPossibleRoutesForCargo(bookingService.requestPossibleRoutesForCargo, tid),
-  };
-
   // ── Sample data ───────────────────────────────────────────────────────────────
 
   if (dbDriver === 'inmemory') {
-    const boundCreateHandlingEvent = (regTime, compTime, trackingId, voyageNum, unlocode, type) =>
-      HandlingEventFactory.createHandlingEvent(
-        cargoRepository.find, voyageRepository.find, locationRepository.find,
-        regTime, compTime, trackingId, voyageNum, unlocode, type
-      );
-    await SampleDataGenerator.generate(
-      locationRepository.store,
-      voyageRepository.store,
-      cargoRepository.store,
-      handlingEventRepository.store,
-      boundCreateHandlingEvent,
-      handlingEventRepository.lookupHandlingHistoryOfCargo
-    );
+    await SampleDataGenerator.generate();
   }
 
   return {
@@ -270,10 +201,9 @@ async function createContainer() {
     handlingEventRepository,
     locationRepository,
     voyageRepository,
-    bookingService,
-    handlingEventService,
-    cargoInspectionService,
-    bookingServiceFacade,
+    bookingService:          BookingService,
+    handlingEventService:    HandlingEventService,
+    cargoInspectionService:  CargoInspectionService,
     applicationEvents,
     disconnect: async () => { await repos.disconnect(); await mqHandle.disconnect(); },
   };

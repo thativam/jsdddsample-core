@@ -1,8 +1,9 @@
 import express from 'express';
 import TrackingId from '../../domain/model/cargo/TrackingId.js';
 import CargoTrackingViewAdapter from '../../interfaces/tracking/CargoTrackingViewAdapter.js';
+import { cargoRepository, handlingEventRepository } from '../../ServiceContext.js';
 
-export default function trackingRoutes(cargoRepository, handlingEventRepository) {
+export default function trackingRoutes() {
   const router = express.Router();
 
   router.get('/', async (req, res) => {

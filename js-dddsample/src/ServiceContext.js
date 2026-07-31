@@ -11,11 +11,16 @@ export let handlingEventRepository = null;
 export let locationRepository      = null;
 export let voyageRepository        = null;
 export let applicationEvents       = null;
+export let routingService          = null;
 
 export function configure(repos, events) {
-  cargoRepository         = repos.cargoRepository;
-  handlingEventRepository = repos.handlingEventRepository;
-  locationRepository      = repos.locationRepository;
-  voyageRepository        = repos.voyageRepository;
+  cargoRepository         = repos.cargoRepository         ?? null;
+  handlingEventRepository = repos.handlingEventRepository ?? null;
+  locationRepository      = repos.locationRepository      ?? null;
+  voyageRepository        = repos.voyageRepository        ?? null;
   applicationEvents       = events;
+}
+
+export function configureRouting(svc) {
+  routingService = svc;
 }

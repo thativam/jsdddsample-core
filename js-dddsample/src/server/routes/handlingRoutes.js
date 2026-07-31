@@ -1,7 +1,8 @@
 import express from 'express';
 import { parse } from '../../interfaces/handling/HandlingReportParser.js';
+import { applicationEvents } from '../../ServiceContext.js';
 
-export default function handlingRoutes(applicationEvents) {
+export default function handlingRoutes() {
   const router = express.Router();
 
   router.post('/handlingReport', (req, res) => {

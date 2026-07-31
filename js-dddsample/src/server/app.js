@@ -23,9 +23,9 @@ app.get('/admin', (req, res) => res.redirect('/views/admin/list.html'));
 async function start() {
   const container = await createContainer();
 
-  app.use('/admin', adminRoutes(container.bookingServiceFacade));
-  app.use('/track', trackingRoutes(container.cargoRepository, container.handlingEventRepository));
-  app.use('/', handlingRoutes(container.applicationEvents));
+  app.use('/admin', adminRoutes());
+  app.use('/track', trackingRoutes());
+  app.use('/', handlingRoutes());
 
   const PORT = process.env.PORT || 8080;
   app.listen(PORT, () => {

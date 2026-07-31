@@ -1,12 +1,9 @@
 import * as BookingService           from '../../src/application/BookingService.js';
 import * as HandlingEventService     from '../../src/application/HandlingEventService.js';
 import * as CargoInspectionService   from '../../src/application/CargoInspectionService.js';
-import CargoFactory                  from '../../src/domain/model/cargo/CargoFactory.js';
 import * as ExternalRoutingService   from '../../src/infrastructure/routing/ExternalRoutingService.js';
-import * as GraphTraversalService    from '../../src/infrastructure/routing/GraphTraversalService.js';
-import * as GraphDAOStub             from '../../src/infrastructure/routing/GraphDAOStub.js';
 import * as SynchronousApplicationEvents from '../../src/infrastructure/messaging/SynchronousApplicationEvents.js';
-import { configure as configureServiceContext } from '../../src/ServiceContext.js';
+import { configure as configureServiceContext, configureRouting } from '../../src/ServiceContext.js';
 
 import CargoRepositoryInMem         from '../../src/infrastructure/persistence/inmemory/CargoRepositoryInMem.js';
 import HandlingEventRepositoryInMem from '../../src/infrastructure/persistence/inmemory/HandlingEventRepositoryInMem.js';
@@ -24,17 +21,16 @@ import TransportStatus   from '../../src/domain/model/cargo/TransportStatus.js';
 import { HONGKONG, STOCKHOLM, NEWYORK, CHICAGO } from '../../src/infrastructure/sampledata/SampleLocations.js';
 import { v100, v200, v300 } from '../../src/infrastructure/sampledata/SampleVoyages.js';
 
-let cargoRepo, handlingEventRepo, locationRepo, voyageRepo;
-let bookingService, applicationEvents;
+let cargoRepo;
 
 beforeEach(() => {
   cargoRepo         = CargoRepositoryInMem();
-  handlingEventRepo = HandlingEventRepositoryInMem();
-  locationRepo      = LocationRepositoryInMem();
-  voyageRepo        = VoyageRepositoryInMem();
+  const handlingEventRepo = HandlingEventRepositoryInMem();
+  const locationRepo      = LocationRepositoryInMem();
+  const voyageRepo        = VoyageRepositoryInMem();
 
   const eventsRef = SynchronousApplicationEvents.createRef();
-  applicationEvents = {
+  const applicationEvents = {
     setCargoInspectionService: (svc) =>
       SynchronousApplicationEvents.setCargoInspectionService(eventsRef, svc),
     cargoWasHandled:     (e) => SynchronousApplicationEvents.cargoWasHandled(eventsRef, e),
@@ -51,25 +47,9 @@ beforeEach(() => {
     },
     applicationEvents
   );
+  configureRouting(ExternalRoutingService);
 
   applicationEvents.setCargoInspectionService({ inspectCargo: CargoInspectionService.inspectCargo });
-
-  const boundFindShortestPath = (o, d, lim) =>
-    GraphTraversalService.findShortestPath(GraphDAOStub.listAllNodes, GraphDAOStub.getTransitEdge, o, d, lim);
-
-  const boundFetchRoutes = (spec) =>
-    ExternalRoutingService.fetchRoutesForSpecification(boundFindShortestPath, locationRepo.find, voyageRepo.find, spec);
-
-  bookingService = {
-    bookNewCargo: (o, d, dl) =>
-      BookingService.bookNewCargo(CargoFactory.createCargo, cargoRepo.store, o, d, dl),
-    requestPossibleRoutesForCargo: (tid) =>
-      BookingService.requestPossibleRoutesForCargo(cargoRepo.find, boundFetchRoutes, tid),
-    assignCargoToRoute: (itin, tid) =>
-      BookingService.assignCargoToRoute(cargoRepo.find, cargoRepo.store, itin, tid),
-    changeDestination: (tid, ul) =>
-      BookingService.changeDestination(cargoRepo.find, locationRepo.find, cargoRepo.store, tid, ul),
-  };
 });
 
 async function register(trackingId, type, location, voyage, date) {
@@ -84,7 +64,7 @@ async function register(trackingId, type, location, voyage, date) {
 
 describe('Cargo lifecycle scenario', () => {
   test('full lifecycle from booking to arrival at destination', async () => {
-    const trackingId = await bookingService.bookNewCargo(
+    const trackingId = await BookingService.bookNewCargo(
       UnLocode('CNHKG'), UnLocode('SESTO'), new Date('2009-03-18')
     );
 
@@ -97,7 +77,7 @@ describe('Cargo lifecycle scenario', () => {
       Leg(v200, NEWYORK,  CHICAGO,   new Date('2009-03-10'), new Date('2009-03-14')),
       Leg(v200, CHICAGO,  STOCKHOLM, new Date('2009-03-14'), new Date('2009-03-16')),
     ]);
-    await bookingService.assignCargoToRoute(itinerary, trackingId);
+    await BookingService.assignCargoToRoute(itinerary, trackingId);
 
     cargo = await cargoRepo.find(trackingId);
     expect(cargo.delivery().routingStatus()).toBe(RoutingStatus.ROUTED);
@@ -139,10 +119,10 @@ describe('Cargo lifecycle scenario', () => {
   });
 
   test('misdirected cargo detected when loaded on wrong voyage', async () => {
-    const trackingId = await bookingService.bookNewCargo(
+    const trackingId = await BookingService.bookNewCargo(
       UnLocode('CNHKG'), UnLocode('SESTO'), new Date('2009-03-18')
     );
-    await bookingService.assignCargoToRoute(Itinerary([
+    await BookingService.assignCargoToRoute(Itinerary([
       Leg(v100, HONGKONG, NEWYORK,   new Date('2009-03-03'), new Date('2009-03-09')),
       Leg(v200, NEWYORK,  STOCKHOLM, new Date('2009-03-14'), new Date('2009-03-16')),
     ]), trackingId);
@@ -154,15 +134,15 @@ describe('Cargo lifecycle scenario', () => {
   });
 
   test('change destination causes MISROUTED if itinerary does not satisfy new spec', async () => {
-    const trackingId = await bookingService.bookNewCargo(
+    const trackingId = await BookingService.bookNewCargo(
       UnLocode('CNHKG'), UnLocode('SESTO'), new Date('2009-03-18')
     );
-    await bookingService.assignCargoToRoute(Itinerary([
+    await BookingService.assignCargoToRoute(Itinerary([
       Leg(v100, HONGKONG, NEWYORK,   new Date('2009-03-03'), new Date('2009-03-09')),
       Leg(v200, NEWYORK,  STOCKHOLM, new Date('2009-03-14'), new Date('2009-03-16')),
     ]), trackingId);
 
-    await bookingService.changeDestination(trackingId, UnLocode('FIHEL'));
+    await BookingService.changeDestination(trackingId, UnLocode('FIHEL'));
     expect((await cargoRepo.find(trackingId)).delivery().routingStatus()).toBe(RoutingStatus.MISROUTED);
   });
 });
