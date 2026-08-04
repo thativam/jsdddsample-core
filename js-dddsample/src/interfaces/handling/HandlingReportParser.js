@@ -21,15 +21,15 @@ function parseVoyageNumber(str) {
 
 function parseDate(str) {
   const ISO_8601_FORMAT = 'yyyy-MM-dd HH:mm';
-  if (!str) throw new Error(`Invalid date format: ${str}, must be on ISO 8601 format: ${ISO_8601_FORMAT}`);
-  try {
-    const normalized = str.replace(' ', 'T') + (str.includes('T') ? '' : ':00Z');
-    const d = new Date(normalized.endsWith('Z') ? normalized : normalized + 'Z');
-    if (isNaN(d.getTime())) throw new Error('Invalid date');
-    return d;
-  } catch (e) {
-    throw new Error(`Invalid date format: ${str}, must be on ISO 8601 format: ${'yyyy-MM-dd HH:mm'}`);
+  const FORMAT_PATTERN  = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/;
+  if (!str || !FORMAT_PATTERN.test(str)) {
+    throw new Error(`Invalid date format: ${str}, must be on ISO 8601 format: ${ISO_8601_FORMAT}`);
   }
+  const d = new Date(str.replace(' ', 'T') + ':00Z');
+  if (isNaN(d.getTime())) {
+    throw new Error(`Invalid date format: ${str}, must be on ISO 8601 format: ${ISO_8601_FORMAT}`);
+  }
+  return d;
 }
 
 function parseEventType(str) {
