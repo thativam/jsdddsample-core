@@ -1,0 +1,41 @@
+{
+  "name": "helloworld",
+  "version": "1.0.0",
+  "main": "start.js",
+  "type": "module",
+  "scripts": {
+    "start" : "node start.js",
+    "test": "node --experimental-vm-modules node_modules/jest-cli/bin/jest.js --testPathPattern=test/ --forceExit",
+    "test:coverage": "node --experimental-vm-modules node_modules/jest-cli/bin/jest.js --testPathPattern=test/ --forceExit --coverage",
+    "test:watch": "node --experimental-vm-modules node_modules/jest-cli/bin/jest.js --watch",
+    "test:acceptance": "playwright test",
+    "test:acceptance:ui": "playwright test --ui"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "amqplib": "^0.10.7",
+    "express": "^5.1.0",
+    "node-fetch": "^3.3.2",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^7.1.4",
+    "@playwright/test": "^1.44.0"
+  },
+  "imports": {
+    "#root/*": "./*"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/test/**/*.test.js"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/test/acceptance/"
+    ]
+  }
+}
