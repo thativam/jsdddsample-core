@@ -1,0 +1,4 @@
+division,server,dir,installOk,unitTotal,unitPassed,unitFailed,statementsPct,branchesPct,linesPct,functionsPct,acceptanceTotal,acceptancePassed,acceptanceFailed,acceptanceFlaky,acceptanceSkipped,notes
+config,alpha,distributed/alpha-test-server,true,172,172,0,79.24,68.31,82.95,82.77,5,5,0,0,0,
+config,beta,distributed/beta-test-server,true,172,172,0,79.48,68.31,83.24,82.77,5,5,0,0,0,
+config,gamma,distributed/gamma-test-server,true,172,172,0,79.72,68.31,83.53,82.77,5,5,0,0,0,
