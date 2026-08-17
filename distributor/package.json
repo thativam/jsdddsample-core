@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dist": "js-distributor-scripts -c ./utils/config.yml",
+    "dist": "js-distributor-scripts -c ./utils/config-valid.yml",
     "migrate:test": "node scripts/orchestrate-migration-tests.mjs"
   },
   "author": "",
