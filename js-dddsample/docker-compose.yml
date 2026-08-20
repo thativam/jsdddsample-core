@@ -1,0 +1,26 @@
+services:
+
+  mongo:
+    image: mongo:7
+    container_name: dddsample-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: dddsample
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: dddsample-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"    # AMQP
+      - "15672:15672"  # Management UI → http://localhost:15672  (guest/guest)
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+volumes:
+  mongo_data:
+  rabbitmq_data:

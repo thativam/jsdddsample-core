@@ -17,22 +17,28 @@ default:
 servers:
   - id: alpha
     copyFiles:
-      - from: amqplib_package.json    # relative to current path
+      - from: html_package.json    # relative to current path
         to: package.json  
+      - from: .env
+        to: .env
   - id: beta
     http:
       url: localhost
       port: 3002
     copyFiles:
-      - from: amqplib_package.json    # relative to current path
+      - from: def_package.json    # relative to current path
         to: package.json  
+      - from: .env
+        to: .env
     functions:
     - declarationPattern: createCargo
       method: http-get
   - id: gamma
     copyFiles:
-      - from: amqplib_package.json    # relative to current path
+      - from: def_package.json    # relative to current path
         to: package.json  
+      - from: .env
+        to: .env
     http:
       url: localhost
       port: 3003

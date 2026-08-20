@@ -3,10 +3,18 @@ import TrackingId  from '../../../domain/model/cargo/TrackingId.js';
 import * as CargoMapper from './mappers/CargoMapper.js';
 
 function CargoRepositoryMongo(collection, findLocation, findVoyage, lookupHandlingHistoryOfCargo) {
-  async function find(trackingId) {
+  // Load cargo without computing delivery progress.
+  // Used by event mappers to break the cargo ↔ handling-event circular dependency:
+  //   find → lookupHandlingHistory → HandlingEventMapper → findCargo → find (loop)
+  async function findShallow(trackingId) {
     const doc = await collection.findOne({ _id: trackingId.idString() });
     if (!doc) return null;
-    const cargo   = await CargoMapper.toDomain(doc, findLocation, findVoyage);
+    return CargoMapper.toDomain(doc, findLocation, findVoyage);
+  }
+
+  async function find(trackingId) {
+    const cargo = await findShallow(trackingId);
+    if (!cargo) return null;
     const history = await lookupHandlingHistoryOfCargo(trackingId);
     cargo.deriveDeliveryProgress(history);
     return cargo;
@@ -31,7 +39,7 @@ function CargoRepositoryMongo(collection, findLocation, findVoyage, lookupHandli
     return TrackingId(randomUUID().replace(/-/g, '').substring(0, 8).toUpperCase());
   }
 
-  return { find, store, getAll, nextTrackingId };
+  return { find, findShallow, store, getAll, nextTrackingId };
 }
 
 export default CargoRepositoryMongo;

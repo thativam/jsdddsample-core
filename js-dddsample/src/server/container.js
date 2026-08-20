@@ -44,7 +44,9 @@ async function buildMongoRepos() {
   let cargoRepository;
   const handlingEventRepository = HandlingEventRepositoryMongo(
     db.collection('handlingEvents'),
-    (trackingId)   => cargoRepository.find(trackingId),
+    // Use findShallow here — it loads the cargo document without triggering
+    // lookupHandlingHistoryOfCargo, which would loop back into this same mapper.
+    (trackingId)   => cargoRepository.findShallow(trackingId),
     (unLocode)     => locationRepository.find(unLocode),
     (voyageNumber) => voyageRepository.find(voyageNumber)
   );
@@ -191,9 +193,16 @@ async function createContainer() {
   }
 
   // ── Sample data ───────────────────────────────────────────────────────────────
+  // In-memory repos reset on every restart, so always seed them.
+  // For persistent drivers (mongo, mysql) seed only when the DB is empty.
+  // locationRepository.getAll() is safe to use as a sentinel: it has no joins
+  // and no circular dependencies, unlike cargoRepository.getAll().
 
   if (dbDriver === 'inmemory') {
     await SampleDataGenerator.generate();
+  } else {
+    const locs = await locationRepository.getAll();
+    if (locs.length === 0) await SampleDataGenerator.generate();
   }
 
   return {
