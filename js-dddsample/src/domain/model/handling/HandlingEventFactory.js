@@ -1,4 +1,7 @@
-import HandlingEvent from './HandlingEvent.js';
+import HandlingEvent  from './HandlingEvent.js';
+import TrackingId    from '../cargo/TrackingId.js';
+import VoyageNumber  from '../voyage/VoyageNumber.js';
+import UnLocode      from '../location/UnLocode.js';
 import {
   UnknownCargoException,
   UnknownVoyageException,
@@ -26,12 +29,20 @@ async function findLocation(unlocode) {
   return location;
 }
 
-async function createHandlingEvent(registrationTime, completionTime, trackingId, voyageNumber, unlocode, type) {
+/**
+ * @param {Date}   registrationTime
+ * @param {Date}   completionTime
+ * @param {string} trackingIdStr
+ * @param {string|null} voyageNumberStr
+ * @param {string} unlocodeStr
+ * @param {HandlingEventType} type
+ */
+async function createHandlingEvent(registrationTime, completionTime, trackingIdStr, voyageNumberStr, unlocodeStr, type) {
   try {
     const [cargo, voyage, location] = await Promise.all([
-      findCargo(trackingId),
-      findVoyage(voyageNumber),
-      findLocation(unlocode),
+      findCargo(TrackingId(trackingIdStr)),
+      findVoyage(voyageNumberStr ? VoyageNumber(voyageNumberStr) : null),
+      findLocation(UnLocode(unlocodeStr)),
     ]);
     return HandlingEvent(cargo, completionTime, registrationTime, type, location, voyage || undefined);
   } catch (e) {

@@ -10,8 +10,6 @@ import HandlingEventRepositoryInMem from '../../src/infrastructure/persistence/i
 import LocationRepositoryInMem      from '../../src/infrastructure/persistence/inmemory/LocationRepositoryInMem.js';
 import VoyageRepositoryInMem        from '../../src/infrastructure/persistence/inmemory/VoyageRepositoryInMem.js';
 
-import UnLocode          from '../../src/domain/model/location/UnLocode.js';
-import VoyageNumber      from '../../src/domain/model/voyage/VoyageNumber.js';
 import Itinerary         from '../../src/domain/model/cargo/Itinerary.js';
 import Leg               from '../../src/domain/model/cargo/Leg.js';
 import HandlingEventType from '../../src/domain/model/handling/HandlingEventType.js';
@@ -55,9 +53,9 @@ beforeEach(() => {
 async function register(trackingId, type, location, voyage, date) {
   await HandlingEventService.registerHandlingEvent(
     new Date(date),
-    trackingId,
-    voyage ? VoyageNumber(voyage) : null,
-    UnLocode(location),
+    trackingId.idString(),
+    voyage ?? null,
+    location,
     type
   );
 }
@@ -65,7 +63,7 @@ async function register(trackingId, type, location, voyage, date) {
 describe('Cargo lifecycle scenario', () => {
   test('full lifecycle from booking to arrival at destination', async () => {
     const trackingId = await BookingService.bookNewCargo(
-      UnLocode('CNHKG'), UnLocode('SESTO'), new Date('2009-03-18')
+      'CNHKG', 'SESTO', new Date('2009-03-18')
     );
 
     let cargo = await cargoRepo.find(trackingId);
@@ -77,7 +75,7 @@ describe('Cargo lifecycle scenario', () => {
       Leg(v200, NEWYORK,  CHICAGO,   new Date('2009-03-10'), new Date('2009-03-14')),
       Leg(v200, CHICAGO,  STOCKHOLM, new Date('2009-03-14'), new Date('2009-03-16')),
     ]);
-    await BookingService.assignCargoToRoute(itinerary, trackingId);
+    await BookingService.assignCargoToRoute(itinerary, trackingId.idString());
 
     cargo = await cargoRepo.find(trackingId);
     expect(cargo.delivery().routingStatus()).toBe(RoutingStatus.ROUTED);
@@ -120,7 +118,7 @@ describe('Cargo lifecycle scenario', () => {
 
   test('misdirected cargo detected when loaded on wrong voyage', async () => {
     const trackingId = await BookingService.bookNewCargo(
-      UnLocode('CNHKG'), UnLocode('SESTO'), new Date('2009-03-18')
+      'CNHKG', 'SESTO', new Date('2009-03-18')
     );
     await BookingService.assignCargoToRoute(Itinerary([
       Leg(v100, HONGKONG, NEWYORK,   new Date('2009-03-03'), new Date('2009-03-09')),
@@ -135,14 +133,14 @@ describe('Cargo lifecycle scenario', () => {
 
   test('change destination causes MISROUTED if itinerary does not satisfy new spec', async () => {
     const trackingId = await BookingService.bookNewCargo(
-      UnLocode('CNHKG'), UnLocode('SESTO'), new Date('2009-03-18')
+      'CNHKG', 'SESTO', new Date('2009-03-18')
     );
     await BookingService.assignCargoToRoute(Itinerary([
       Leg(v100, HONGKONG, NEWYORK,   new Date('2009-03-03'), new Date('2009-03-09')),
       Leg(v200, NEWYORK,  STOCKHOLM, new Date('2009-03-14'), new Date('2009-03-16')),
     ]), trackingId);
 
-    await BookingService.changeDestination(trackingId, UnLocode('FIHEL'));
+    await BookingService.changeDestination(trackingId.idString(), 'FIHEL');
     expect((await cargoRepo.find(trackingId)).delivery().routingStatus()).toBe(RoutingStatus.MISROUTED);
   });
 });

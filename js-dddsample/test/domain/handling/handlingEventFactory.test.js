@@ -9,8 +9,6 @@ import HandlingEventType from '../../../src/domain/model/handling/HandlingEventT
 import Cargo              from '../../../src/domain/model/cargo/Cargo.js';
 import TrackingId         from '../../../src/domain/model/cargo/TrackingId.js';
 import RouteSpecification from '../../../src/domain/model/cargo/RouteSpecification.js';
-import VoyageNumber       from '../../../src/domain/model/voyage/VoyageNumber.js';
-import UnLocode           from '../../../src/domain/model/location/UnLocode.js';
 import LocationRepositoryInMem from '../../../src/infrastructure/persistence/inmemory/LocationRepositoryInMem.js';
 import VoyageRepositoryInMem   from '../../../src/infrastructure/persistence/inmemory/VoyageRepositoryInMem.js';
 import { configure as configureServiceContext } from '../../../src/ServiceContext.js';
@@ -49,7 +47,7 @@ describe('HandlingEventFactory', () => {
     const unLocode     = STOCKHOLM.unLocode();
 
     const event = await HandlingEventFactory.createHandlingEvent(
-      new Date(), new Date(100), trackingId, voyageNumber, unLocode, HandlingEventType.LOAD
+      new Date(), new Date(100), trackingId.idString(), voyageNumber.idString(), unLocode.idString(), HandlingEventType.LOAD
     );
 
     expect(event).not.toBeNull();
@@ -61,7 +59,7 @@ describe('HandlingEventFactory', () => {
 
   test('createHandlingEvent without voyage returns event with no voyage', async () => {
     const event = await HandlingEventFactory.createHandlingEvent(
-      new Date(), new Date(100), trackingId, null, STOCKHOLM.unLocode(), HandlingEventType.CLAIM
+      new Date(), new Date(100), trackingId.idString(), null, STOCKHOLM.unLocode().idString(), HandlingEventType.CLAIM
     );
 
     expect(event).not.toBeNull();
@@ -74,7 +72,7 @@ describe('HandlingEventFactory', () => {
   test('unknown location throws CannotCreateHandlingEventException wrapping UnknownLocationException', async () => {
     await expect(
       HandlingEventFactory.createHandlingEvent(
-        new Date(), new Date(), trackingId, v100.voyageNumber(), UnLocode('NOEXT'), HandlingEventType.LOAD
+        new Date(), new Date(), trackingId.idString(), v100.voyageNumber().idString(), 'NOEXT', HandlingEventType.LOAD
       )
     ).rejects.toThrow(CannotCreateHandlingEventException);
   });
@@ -82,7 +80,7 @@ describe('HandlingEventFactory', () => {
   test('unknown voyage throws CannotCreateHandlingEventException wrapping UnknownVoyageException', async () => {
     await expect(
       HandlingEventFactory.createHandlingEvent(
-        new Date(), new Date(), trackingId, VoyageNumber('XXXXX'), STOCKHOLM.unLocode(), HandlingEventType.LOAD
+        new Date(), new Date(), trackingId.idString(), 'XXXXX', STOCKHOLM.unLocode().idString(), HandlingEventType.LOAD
       )
     ).rejects.toThrow(CannotCreateHandlingEventException);
   });
@@ -99,7 +97,7 @@ describe('HandlingEventFactory', () => {
 
     await expect(
       HandlingEventFactory.createHandlingEvent(
-        new Date(), new Date(), TrackingId('GHOST'), v100.voyageNumber(), STOCKHOLM.unLocode(), HandlingEventType.LOAD
+        new Date(), new Date(), 'GHOST', v100.voyageNumber().idString(), STOCKHOLM.unLocode().idString(), HandlingEventType.LOAD
       )
     ).rejects.toThrow(CannotCreateHandlingEventException);
   });

@@ -147,18 +147,14 @@ async function createContainer() {
 
   if (mqDriver === 'rabbitmq') {
     const { mq } = mqHandle;
-    const { default: TrackingId }        = await import('../domain/model/cargo/TrackingId.js');
-    const { default: VoyageNumber }      = await import('../domain/model/voyage/VoyageNumber.js');
-    const { default: UnLocode }          = await import('../domain/model/location/UnLocode.js');
-    const { default: HandlingEventType } = await import('../domain/model/handling/HandlingEventType.js');
-
     await mq.onHandlingEventAttempt(async (payload) => {
       try {
+        const { default: HandlingEventType } = await import('../domain/model/handling/HandlingEventType.js');
         await HandlingEventService.registerHandlingEvent(
           new Date(payload.completionTime),
-          TrackingId(payload.trackingId),
-          payload.voyageNumber ? VoyageNumber(payload.voyageNumber) : null,
-          UnLocode(payload.unLocode),
+          payload.trackingId,
+          payload.voyageNumber ?? null,
+          payload.unLocode,
           HandlingEventType[payload.type]
         );
       } catch (e) { console.error('[RabbitMQ:handlingEventQueue]', e.message); }
@@ -166,8 +162,7 @@ async function createContainer() {
 
     await mq.onCargoHandled(async (payload) => {
       try {
-        const { default: TrackingId2 } = await import('../domain/model/cargo/TrackingId.js');
-        await CargoInspectionService.inspectCargo(TrackingId2(payload.cargoTrackingId));
+        await CargoInspectionService.inspectCargo(payload.cargoTrackingId);
       } catch (e) { console.error('[RabbitMQ:cargoHandledQueue]', e.message); }
     });
 
@@ -183,7 +178,7 @@ async function createContainer() {
       } catch (e) { console.error('[handlingEventQueue]', e.message); }
     });
     applicationEvents.on('cargoHandledQueue', async (event) => {
-      try { await CargoInspectionService.inspectCargo(event.cargo().trackingId()); }
+      try { await CargoInspectionService.inspectCargo(event.cargo().trackingId().idString()); }
       catch (e) { console.error('[cargoHandledQueue]', e.message); }
     });
     applicationEvents.on('misdirectedCargoQueue', (cargo) =>

@@ -49,14 +49,14 @@ beforeEach(() => {
 describe('HandlingEventService', () => {
   test('registerHandlingEvent stores the event', async () => {
     await HandlingEventService.registerHandlingEvent(
-      new Date(), trackingId, v100.voyageNumber(), STOCKHOLM.unLocode(), HandlingEventType.LOAD
+      new Date(), trackingId.idString(), v100.voyageNumber().idString(), STOCKHOLM.unLocode().idString(), HandlingEventType.LOAD
     );
     expect(storedEvents).toHaveLength(1);
   });
 
   test('registerHandlingEvent fires cargoWasHandled', async () => {
     await HandlingEventService.registerHandlingEvent(
-      new Date(), trackingId, v100.voyageNumber(), STOCKHOLM.unLocode(), HandlingEventType.LOAD
+      new Date(), trackingId.idString(), v100.voyageNumber().idString(), STOCKHOLM.unLocode().idString(), HandlingEventType.LOAD
     );
     expect(handledEvents).toHaveLength(1);
   });
@@ -90,7 +90,7 @@ describe('HandlingEventService', () => {
     );
 
     await HandlingEventService.registerHandlingEvent(
-      new Date(), trackingId, v100.voyageNumber(), STOCKHOLM.unLocode(), HandlingEventType.LOAD
+      new Date(), trackingId.idString(), v100.voyageNumber().idString(), STOCKHOLM.unLocode().idString(), HandlingEventType.LOAD
     );
 
     expect(order).toEqual(['stored', 'fired']);

@@ -4,17 +4,8 @@ import TrackingId        from '../../../../domain/model/cargo/TrackingId.js';
 import UnLocode          from '../../../../domain/model/location/UnLocode.js';
 import VoyageNumber      from '../../../../domain/model/voyage/VoyageNumber.js';
 
-function toDocument(event) {
-  return {
-    cargoTrackingId:  event.cargo().trackingId().idString(),
-    type:             event.type().name,
-    locationCode:     event.location().unLocode().idString(),
-    voyageNumber:     event.voyage() && event.voyage().voyageNumber().idString() !== ''
-                        ? event.voyage().voyageNumber().idString()
-                        : null,
-    completionTime:   event.completionTime(),
-    registrationTime: event.registrationTime(),
-  };
+function toDocument(cargoTrackingId, typeName, locationCode, voyageNumber, completionTime, registrationTime) {
+  return { cargoTrackingId, type: typeName, locationCode, voyageNumber, completionTime, registrationTime };
 }
 
 async function toDomain(doc, findCargo, findLocation, findVoyage) {

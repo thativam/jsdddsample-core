@@ -6,25 +6,16 @@ import Leg                from '../../../../domain/model/cargo/Leg.js';
 import UnLocode           from '../../../../domain/model/location/UnLocode.js';
 import VoyageNumber       from '../../../../domain/model/voyage/VoyageNumber.js';
 
-function toDocument(cargo) {
-  const itinerary = cargo.itinerary();
+function toDocument(trackingId, originCode, routeSpecOriginCode, routeSpecDestCode, arrivalDeadline, legs) {
   return {
-    _id:        cargo.trackingId().idString(),
-    originCode: cargo.origin().unLocode().idString(),
+    _id:        trackingId,
+    originCode,
     routeSpec: {
-      originCode: cargo.routeSpecification().origin().unLocode().idString(),
-      destCode:   cargo.routeSpecification().destination().unLocode().idString(),
-      deadline:   cargo.routeSpecification().arrivalDeadline(),
+      originCode: routeSpecOriginCode,
+      destCode:   routeSpecDestCode,
+      deadline:   arrivalDeadline,
     },
-    itinerary: itinerary ? {
-      legs: itinerary.legs().map(leg => ({
-        voyageNumber: leg.voyage().voyageNumber().idString(),
-        from:         leg.loadLocation().unLocode().idString(),
-        to:           leg.unloadLocation().unLocode().idString(),
-        loadTime:     leg.loadTime(),
-        unloadTime:   leg.unloadTime(),
-      })),
-    } : null,
+    itinerary: legs ? { legs } : null,
   };
 }
 

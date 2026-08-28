@@ -1,5 +1,4 @@
 import TrackingId from '../../domain/model/cargo/TrackingId.js';
-import UnLocode   from '../../domain/model/location/UnLocode.js';
 import { cargoRepository, locationRepository } from '../../ServiceContext.js';
 import { toDTO as cargoToDTO }                           from './assembler/CargoRoutingDTOAssembler.js';
 import { toDTO as itinToDTO, fromDTO as itinFromDTO }   from './assembler/ItineraryCandidateDTOAssembler.js';
@@ -14,9 +13,7 @@ async function listShippingLocations() {
 }
 
 async function bookNewCargo(origin, destination, arrivalDeadline) {
-  const trackingId = await BookingService.bookNewCargo(
-    UnLocode(origin), UnLocode(destination), arrivalDeadline
-  );
+  const trackingId = await BookingService.bookNewCargo(origin, destination, arrivalDeadline);
   return trackingId.idString();
 }
 
@@ -28,11 +25,11 @@ async function loadCargoForRouting(trackingId) {
 
 async function assignCargoToRoute(trackingIdStr, routeCandidateDTO) {
   const itinerary = await itinFromDTO(routeCandidateDTO);
-  await BookingService.assignCargoToRoute(itinerary, TrackingId(trackingIdStr));
+  await BookingService.assignCargoToRoute(itinerary, trackingIdStr);
 }
 
 async function changeDestination(trackingId, destinationUnLocode) {
-  await BookingService.changeDestination(TrackingId(trackingId), UnLocode(destinationUnLocode));
+  await BookingService.changeDestination(trackingId, destinationUnLocode);
 }
 
 async function listAllCargos() {
@@ -41,7 +38,7 @@ async function listAllCargos() {
 }
 
 async function requestPossibleRoutesForCargo(trackingId) {
-  const itineraries = await BookingService.requestPossibleRoutesForCargo(TrackingId(trackingId));
+  const itineraries = await BookingService.requestPossibleRoutesForCargo(trackingId);
   return itineraries.map(it => itinToDTO(it));
 }
 

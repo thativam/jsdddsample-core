@@ -4,16 +4,8 @@ import Schedule        from '../../../../domain/model/voyage/Schedule.js';
 import CarrierMovement from '../../../../domain/model/voyage/CarrierMovement.js';
 import UnLocode        from '../../../../domain/model/location/UnLocode.js';
 
-function toDocument(voyage) {
-  return {
-    _id: voyage.voyageNumber().idString(),
-    carrierMovements: voyage.schedule().carrierMovements().map(cm => ({
-      fromCode:      cm.departureLocation().unLocode().idString(),
-      toCode:        cm.arrivalLocation().unLocode().idString(),
-      departureTime: cm.departureTime(),
-      arrivalTime:   cm.arrivalTime(),
-    })),
-  };
+function toDocument(voyageNumberStr, carrierMovements) {
+  return { _id: voyageNumberStr, carrierMovements };
 }
 
 async function toDomain(doc, findLocation) {

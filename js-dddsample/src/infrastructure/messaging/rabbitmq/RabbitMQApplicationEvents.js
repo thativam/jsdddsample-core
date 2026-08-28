@@ -40,16 +40,10 @@ async function connect(url) {
         completionTime: attempt.completionTime instanceof Date
           ? attempt.completionTime.toISOString()
           : attempt.completionTime,
-        trackingId:   attempt.trackingId.idString
-          ? attempt.trackingId.idString()
-          : String(attempt.trackingId),
-        voyageNumber: attempt.voyageNumber
-          ? (attempt.voyageNumber.idString ? attempt.voyageNumber.idString() : String(attempt.voyageNumber))
-          : null,
-        unLocode: attempt.unLocode.idString
-          ? attempt.unLocode.idString()
-          : String(attempt.unLocode),
-        type: attempt.type && attempt.type.name ? attempt.type.name : String(attempt.type),
+        trackingId:   attempt.trackingId,
+        voyageNumber: attempt.voyageNumber ?? null,
+        unLocode:     attempt.unLocode,
+        type:         attempt.type && attempt.type.name ? attempt.type.name : String(attempt.type),
       });
     },
 

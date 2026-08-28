@@ -1,8 +1,8 @@
 import Location from '../../../../domain/model/location/Location.js';
 import UnLocode from '../../../../domain/model/location/UnLocode.js';
 
-function toDocument(location) {
-  return { _id: location.unLocode().idString(), name: location.name() };
+function toDocument(unLocodeStr, name) {
+  return { _id: unLocodeStr, name };
 }
 
 function toDomain(doc) {

@@ -47,10 +47,10 @@ function parse(report) {
   return trackingIds.map(trackingId => ({
     registrationTime: new Date(),
     completionTime,
-    trackingId,
-    voyageNumber,
+    trackingId:   trackingId.idString(),
+    voyageNumber: voyageNumber ? voyageNumber.idString() : null,
     type,
-    unLocode,
+    unLocode:     unLocode.idString(),
   }));
 }
 
@@ -71,7 +71,14 @@ function parseLine(line) {
   const unLocode       = parseUnLocode(cols[3]);
   const type           = parseEventType(cols[4]);
 
-  return { registrationTime: new Date(), completionTime, trackingId, voyageNumber, type, unLocode };
+  return {
+    registrationTime: new Date(),
+    completionTime,
+    trackingId:   trackingId.idString(),
+    voyageNumber: voyageNumber ? voyageNumber.idString() : null,
+    type,
+    unLocode:     unLocode.idString(),
+  };
 }
 
 export { parse, parseLine, parseUnLocode, parseTrackingId, parseVoyageNumber, parseDate, parseEventType };

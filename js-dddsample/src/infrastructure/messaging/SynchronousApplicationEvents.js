@@ -7,7 +7,7 @@ function setCargoInspectionService(ref, svc) {
 }
 
 function cargoWasHandled(ref, event) {
-  ref.cargoInspectionService.inspectCargo(event.cargo().trackingId());
+  ref.cargoInspectionService.inspectCargo(event.cargo().trackingId().idString());
 }
 
 function cargoWasMisdirected(ref, cargo) {

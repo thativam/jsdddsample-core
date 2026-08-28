@@ -33,9 +33,9 @@ async function generate() {
   ]));
   await cargoRepository.store(abc123);
 
-  await handlingEventRepository.store(await HandlingEventFactory.createHandlingEvent(new Date(), toDate('2009-03-01'), trackingId1, null,                                HONGKONG.unLocode(), HandlingEvent.Type.RECEIVE));
-  await handlingEventRepository.store(await HandlingEventFactory.createHandlingEvent(new Date(), toDate('2009-03-02'), trackingId1, HONGKONG_TO_NEW_YORK.voyageNumber(), HONGKONG.unLocode(), HandlingEvent.Type.LOAD));
-  await handlingEventRepository.store(await HandlingEventFactory.createHandlingEvent(new Date(), toDate('2009-03-05'), trackingId1, HONGKONG_TO_NEW_YORK.voyageNumber(), NEWYORK.unLocode(),  HandlingEvent.Type.UNLOAD));
+  await handlingEventRepository.store(await HandlingEventFactory.createHandlingEvent(new Date(), toDate('2009-03-01'), trackingId1.idString(), null,                                                HONGKONG.unLocode().idString(), HandlingEvent.Type.RECEIVE));
+  await handlingEventRepository.store(await HandlingEventFactory.createHandlingEvent(new Date(), toDate('2009-03-02'), trackingId1.idString(), HONGKONG_TO_NEW_YORK.voyageNumber().idString(), HONGKONG.unLocode().idString(), HandlingEvent.Type.LOAD));
+  await handlingEventRepository.store(await HandlingEventFactory.createHandlingEvent(new Date(), toDate('2009-03-05'), trackingId1.idString(), HONGKONG_TO_NEW_YORK.voyageNumber().idString(), NEWYORK.unLocode().idString(),  HandlingEvent.Type.UNLOAD));
 
   abc123.deriveDeliveryProgress(await handlingEventRepository.lookupHandlingHistoryOfCargo(trackingId1));
   await cargoRepository.store(abc123);
@@ -50,10 +50,10 @@ async function generate() {
   ]));
   await cargoRepository.store(jkl567);
 
-  await handlingEventRepository.store(await HandlingEventFactory.createHandlingEvent(new Date(), toDate('2009-03-01'), trackingId2, null,                                HANGZHOU.unLocode(), HandlingEvent.Type.RECEIVE));
-  await handlingEventRepository.store(await HandlingEventFactory.createHandlingEvent(new Date(), toDate('2009-03-03'), trackingId2, HONGKONG_TO_NEW_YORK.voyageNumber(), HANGZHOU.unLocode(), HandlingEvent.Type.LOAD));
-  await handlingEventRepository.store(await HandlingEventFactory.createHandlingEvent(new Date(), toDate('2009-03-05'), trackingId2, HONGKONG_TO_NEW_YORK.voyageNumber(), NEWYORK.unLocode(),  HandlingEvent.Type.UNLOAD));
-  await handlingEventRepository.store(await HandlingEventFactory.createHandlingEvent(new Date(), toDate('2009-03-06'), trackingId2, HONGKONG_TO_NEW_YORK.voyageNumber(), NEWYORK.unLocode(),  HandlingEvent.Type.LOAD));
+  await handlingEventRepository.store(await HandlingEventFactory.createHandlingEvent(new Date(), toDate('2009-03-01'), trackingId2.idString(), null,                                                HANGZHOU.unLocode().idString(), HandlingEvent.Type.RECEIVE));
+  await handlingEventRepository.store(await HandlingEventFactory.createHandlingEvent(new Date(), toDate('2009-03-03'), trackingId2.idString(), HONGKONG_TO_NEW_YORK.voyageNumber().idString(), HANGZHOU.unLocode().idString(), HandlingEvent.Type.LOAD));
+  await handlingEventRepository.store(await HandlingEventFactory.createHandlingEvent(new Date(), toDate('2009-03-05'), trackingId2.idString(), HONGKONG_TO_NEW_YORK.voyageNumber().idString(), NEWYORK.unLocode().idString(),  HandlingEvent.Type.UNLOAD));
+  await handlingEventRepository.store(await HandlingEventFactory.createHandlingEvent(new Date(), toDate('2009-03-06'), trackingId2.idString(), HONGKONG_TO_NEW_YORK.voyageNumber().idString(), NEWYORK.unLocode().idString(),  HandlingEvent.Type.LOAD));
 
   jkl567.deriveDeliveryProgress(await handlingEventRepository.lookupHandlingHistoryOfCargo(trackingId2));
   await cargoRepository.store(jkl567);

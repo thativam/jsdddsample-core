@@ -7,7 +7,15 @@ function VoyageRepositoryMongo(collection, findLocation) {
   }
 
   async function store(voyage) {
-    const doc = VoyageMapper.toDocument(voyage);
+    const doc = VoyageMapper.toDocument(
+      voyage.voyageNumber().idString(),
+      voyage.schedule().carrierMovements().map(cm => ({
+        fromCode:      cm.departureLocation().unLocode().idString(),
+        toCode:        cm.arrivalLocation().unLocode().idString(),
+        departureTime: cm.departureTime(),
+        arrivalTime:   cm.arrivalTime(),
+      })),
+    );
     await collection.replaceOne({ _id: doc._id }, doc, { upsert: true });
   }
 
