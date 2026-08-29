@@ -4,16 +4,8 @@ import VoyageNumber from '../../../domain/model/voyage/VoyageNumber.js';
 import UnLocode     from '../../../domain/model/location/UnLocode.js';
 import { voyageRepository, locationRepository } from '../../../ServiceContext.js';
 
-function toDTO(itinerary) {
-  return {
-    legs: itinerary.legs().map(leg => ({
-      voyageNumber: leg.voyage().voyageNumber().idString(),
-      from:         leg.loadLocation().unLocode().idString(),
-      to:           leg.unloadLocation().unLocode().idString(),
-      loadTime:     leg.loadTime(),
-      unloadTime:   leg.unloadTime(),
-    })),
-  };
+function toDTO(legs) {
+  return { legs };
 }
 
 async function fromDTO(dto) {

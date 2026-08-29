@@ -6,13 +6,10 @@ import UnLocode          from '../../../domain/model/location/UnLocode.js';
 import VoyageNumber      from '../../../domain/model/voyage/VoyageNumber.js';
 
 function HandlingEventRepositoryMySQL(pool, findCargo, findLocation, findVoyage) {
-  async function store(event) {
-    const voyageNum = event.voyage() && event.voyage().voyageNumber().idString() !== ''
-      ? event.voyage().voyageNumber().idString()
-      : null;
+  async function store(_, cargoTrackingId, typeName, locationCode, voyageNumber, completionTime, registrationTime) {
     await pool.execute(
       'INSERT INTO handling_events (cargo_tracking_id, type, location_unlocode, voyage_number, completion_time, registration_time) VALUES (?,?,?,?,?,?)',
-      [event.cargo().trackingId().idString(), event.type().name, event.location().unLocode().idString(), voyageNum, event.completionTime(), event.registrationTime()]
+      [cargoTrackingId, typeName, locationCode, voyageNumber, completionTime, registrationTime]
     );
   }
 

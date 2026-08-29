@@ -1,25 +1,18 @@
 import HandlingEventType from '../../domain/model/handling/HandlingEventType.js';
 import TransportStatus   from '../../domain/model/cargo/TransportStatus.js';
 
-function HandlingEventViewAdapter(cargo, handlingEvent) {
-  function getLocation()     { return handlingEvent.location().name(); }
-  function getTime()         { return handlingEvent.completionTime().toISOString().slice(0, 16).replace('T', ' '); }
-  function getType()         { return handlingEvent.type().name; }
-  function getVoyageNumber() {
-    const v = handlingEvent.voyage();
-    return v ? v.voyageNumber().idString() : '';
-  }
-  function isExpected() {
-    const itinerary = cargo.itinerary();
-    return itinerary ? itinerary.isExpected(handlingEvent) : false;
-  }
+function HandlingEventViewAdapter(locationName, completionTime, type, voyageNumber, isEventExpected) {
+  function getLocation()     { return locationName; }
+  function getTime()         { return completionTime.toISOString().slice(0, 16).replace('T', ' '); }
+  function getType()         { return type.name; }
+  function getVoyageNumber() { return voyageNumber; }
+  function isExpected()      { return isEventExpected; }
   function getDescription() {
-    const type = handlingEvent.type();
-    const loc  = handlingEvent.location().name();
-    const time = handlingEvent.completionTime().toISOString().slice(0, 10);
+    const loc  = locationName;
+    const time = completionTime.toISOString().slice(0, 10);
     switch (type) {
-      case HandlingEventType.LOAD:    return `Loaded onto voyage ${handlingEvent.voyage().voyageNumber()} in ${loc} on ${time}.`;
-      case HandlingEventType.UNLOAD:  return `Unloaded off voyage ${handlingEvent.voyage().voyageNumber()} in ${loc} on ${time}.`;
+      case HandlingEventType.LOAD:    return `Loaded onto voyage ${voyageNumber} in ${loc} on ${time}.`;
+      case HandlingEventType.UNLOAD:  return `Unloaded off voyage ${voyageNumber} in ${loc} on ${time}.`;
       case HandlingEventType.RECEIVE: return `Received in ${loc} on ${time}.`;
       case HandlingEventType.CLAIM:   return `Claimed in ${loc} on ${time}.`;
       case HandlingEventType.CUSTOMS: return `Customs inspection in ${loc} on ${time}.`;
@@ -29,20 +22,33 @@ function HandlingEventViewAdapter(cargo, handlingEvent) {
   return { getLocation, getTime, getType, getVoyageNumber, isExpected, getDescription };
 }
 
-function CargoTrackingViewAdapter(cargo, handlingEvents) {
-  const _events = handlingEvents.map(e => HandlingEventViewAdapter(cargo, e));
-
-  function getTrackingId()    { return cargo.trackingId().idString(); }
-  function getDestination()   { return cargo.routeSpecification().destination().name(); }
-  function getOrigin()        { return cargo.origin().name(); }
-  function isMisdirected()    { return cargo.delivery().isMisdirected(); }
-  function getEvents()        { return _events; }
+/**
+ * @param {string}  trackingId
+ * @param {string}  originName
+ * @param {string}  destinationName
+ * @param {boolean} isMisdirectedFlag
+ * @param {*}       transportStatus       TransportStatus value
+ * @param {string}  lastKnownLocationName
+ * @param {string}  currentVoyageNumber
+ * @param {Date|null} eta
+ * @param {{type, locationName: string, voyageNumber: string|null}|null} nextActivity
+ * @param {ReturnType<typeof HandlingEventViewAdapter>[]} events
+ */
+function CargoTrackingViewAdapter(
+  trackingId, originName, destinationName, isMisdirectedFlag,
+  transportStatus, lastKnownLocationName, currentVoyageNumber,
+  eta, nextActivity, events,
+) {
+  function getTrackingId()  { return trackingId; }
+  function getDestination() { return destinationName; }
+  function getOrigin()      { return originName; }
+  function isMisdirected()  { return isMisdirectedFlag; }
+  function getEvents()      { return events; }
 
   function getStatusText() {
-    const delivery = cargo.delivery();
-    switch (delivery.transportStatus()) {
-      case TransportStatus.IN_PORT:         return `In port ${delivery.lastKnownLocation().name()}`;
-      case TransportStatus.ONBOARD_CARRIER: return `Onboard voyage ${delivery.currentVoyage().voyageNumber().idString()}`;
+    switch (transportStatus) {
+      case TransportStatus.IN_PORT:         return `In port ${lastKnownLocationName}`;
+      case TransportStatus.ONBOARD_CARRIER: return `Onboard voyage ${currentVoyageNumber}`;
       case TransportStatus.CLAIMED:         return 'Claimed';
       case TransportStatus.NOT_RECEIVED:    return 'Not received';
       default:                              return 'Unknown';
@@ -50,27 +56,24 @@ function CargoTrackingViewAdapter(cargo, handlingEvents) {
   }
 
   function getEta() {
-    const eta = cargo.delivery().estimatedTimeOfArrival();
     if (!eta) return '?';
     return eta.toISOString().slice(0, 16).replace('T', ' ');
   }
 
   function getNextExpectedActivity() {
-    const activity = cargo.delivery().nextExpectedActivity();
-    if (!activity) return '';
-    const type = activity.type();
-    const loc  = activity.location().name();
+    if (!nextActivity) return '';
+    const { type, locationName, voyageNumber } = nextActivity;
     const text = 'Next expected activity is to ';
     if (type === HandlingEventType.LOAD || type === HandlingEventType.UNLOAD) {
-      const voy = activity.voyage() ? activity.voyage().voyageNumber().idString() : '';
       return type === HandlingEventType.LOAD
-        ? `${text}load cargo onto voyage ${voy} in ${loc}`
-        : `${text}unload cargo off of ${voy} in ${loc}`;
+        ? `${text}load cargo onto voyage ${voyageNumber} in ${locationName}`
+        : `${text}unload cargo off of ${voyageNumber} in ${locationName}`;
     }
-    return `${text}${type.name.toLowerCase()} cargo in ${loc}`;
+    return `${text}${type.name.toLowerCase()} cargo in ${locationName}`;
   }
 
   return { getTrackingId, getDestination, getOrigin, isMisdirected, getEvents, getStatusText, getEta, getNextExpectedActivity };
 }
 
+export { HandlingEventViewAdapter };
 export default CargoTrackingViewAdapter;

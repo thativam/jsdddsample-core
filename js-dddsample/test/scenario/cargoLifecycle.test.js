@@ -10,6 +10,7 @@ import HandlingEventRepositoryInMem from '../../src/infrastructure/persistence/i
 import LocationRepositoryInMem      from '../../src/infrastructure/persistence/inmemory/LocationRepositoryInMem.js';
 import VoyageRepositoryInMem        from '../../src/infrastructure/persistence/inmemory/VoyageRepositoryInMem.js';
 
+import TrackingId        from '../../src/domain/model/cargo/TrackingId.js';
 import Itinerary         from '../../src/domain/model/cargo/Itinerary.js';
 import Leg               from '../../src/domain/model/cargo/Leg.js';
 import HandlingEventType from '../../src/domain/model/handling/HandlingEventType.js';
@@ -31,9 +32,9 @@ beforeEach(() => {
   const applicationEvents = {
     setCargoInspectionService: (svc) =>
       SynchronousApplicationEvents.setCargoInspectionService(eventsRef, svc),
-    cargoWasHandled:     (e) => SynchronousApplicationEvents.cargoWasHandled(eventsRef, e),
-    cargoWasMisdirected: (c) => SynchronousApplicationEvents.cargoWasMisdirected(eventsRef, c),
-    cargoHasArrived:     (c) => SynchronousApplicationEvents.cargoHasArrived(eventsRef, c),
+    cargoWasHandled:     (eventData)       => SynchronousApplicationEvents.cargoWasHandled(eventsRef, eventData),
+    cargoWasMisdirected: (cargoTrackingId) => SynchronousApplicationEvents.cargoWasMisdirected(eventsRef, cargoTrackingId),
+    cargoHasArrived:     (cargoTrackingId) => SynchronousApplicationEvents.cargoHasArrived(eventsRef, cargoTrackingId),
   };
 
   configureServiceContext(
@@ -53,7 +54,7 @@ beforeEach(() => {
 async function register(trackingId, type, location, voyage, date) {
   await HandlingEventService.registerHandlingEvent(
     new Date(date),
-    trackingId.idString(),
+    trackingId,
     voyage ?? null,
     location,
     type
@@ -66,7 +67,7 @@ describe('Cargo lifecycle scenario', () => {
       'CNHKG', 'SESTO', new Date('2009-03-18')
     );
 
-    let cargo = await cargoRepo.find(trackingId);
+    let cargo = await cargoRepo.find(TrackingId(trackingId));
     expect(cargo.delivery().routingStatus()).toBe(RoutingStatus.NOT_ROUTED);
     expect(cargo.delivery().transportStatus()).toBe(TransportStatus.NOT_RECEIVED);
 
@@ -75,44 +76,44 @@ describe('Cargo lifecycle scenario', () => {
       Leg(v200, NEWYORK,  CHICAGO,   new Date('2009-03-10'), new Date('2009-03-14')),
       Leg(v200, CHICAGO,  STOCKHOLM, new Date('2009-03-14'), new Date('2009-03-16')),
     ]);
-    await BookingService.assignCargoToRoute(itinerary, trackingId.idString());
+    await BookingService.assignCargoToRoute(itinerary, trackingId);
 
-    cargo = await cargoRepo.find(trackingId);
+    cargo = await cargoRepo.find(TrackingId(trackingId));
     expect(cargo.delivery().routingStatus()).toBe(RoutingStatus.ROUTED);
 
     await register(trackingId, HandlingEventType.RECEIVE, 'CNHKG', null, '2009-03-01');
-    cargo = await cargoRepo.find(trackingId);
+    cargo = await cargoRepo.find(TrackingId(trackingId));
     expect(cargo.delivery().transportStatus()).toBe(TransportStatus.IN_PORT);
     expect(cargo.delivery().lastKnownLocation().sameIdentityAs(HONGKONG)).toBe(true);
 
     await register(trackingId, HandlingEventType.LOAD, 'CNHKG', 'V100', '2009-03-03');
-    cargo = await cargoRepo.find(trackingId);
+    cargo = await cargoRepo.find(TrackingId(trackingId));
     expect(cargo.delivery().transportStatus()).toBe(TransportStatus.ONBOARD_CARRIER);
     expect(cargo.delivery().currentVoyage().voyageNumber().idString()).toBe('V100');
 
     await register(trackingId, HandlingEventType.UNLOAD, 'USNYC', 'V100', '2009-03-09');
-    cargo = await cargoRepo.find(trackingId);
+    cargo = await cargoRepo.find(TrackingId(trackingId));
     expect(cargo.delivery().transportStatus()).toBe(TransportStatus.IN_PORT);
     expect(cargo.delivery().lastKnownLocation().sameIdentityAs(NEWYORK)).toBe(true);
 
     await register(trackingId, HandlingEventType.LOAD, 'USNYC', 'V200', '2009-03-10');
-    cargo = await cargoRepo.find(trackingId);
+    cargo = await cargoRepo.find(TrackingId(trackingId));
     expect(cargo.delivery().transportStatus()).toBe(TransportStatus.ONBOARD_CARRIER);
 
     await register(trackingId, HandlingEventType.UNLOAD, 'USCHI', 'V200', '2009-03-14');
-    cargo = await cargoRepo.find(trackingId);
+    cargo = await cargoRepo.find(TrackingId(trackingId));
     expect(cargo.delivery().transportStatus()).toBe(TransportStatus.IN_PORT);
 
     await register(trackingId, HandlingEventType.LOAD, 'USCHI', 'V200', '2009-03-14');
-    cargo = await cargoRepo.find(trackingId);
+    cargo = await cargoRepo.find(TrackingId(trackingId));
     expect(cargo.delivery().transportStatus()).toBe(TransportStatus.ONBOARD_CARRIER);
 
     await register(trackingId, HandlingEventType.UNLOAD, 'SESTO', 'V200', '2009-03-16');
-    cargo = await cargoRepo.find(trackingId);
+    cargo = await cargoRepo.find(TrackingId(trackingId));
     expect(cargo.delivery().isUnloadedAtDestination()).toBe(true);
 
     await register(trackingId, HandlingEventType.CLAIM, 'SESTO', null, '2009-03-17');
-    cargo = await cargoRepo.find(trackingId);
+    cargo = await cargoRepo.find(TrackingId(trackingId));
     expect(cargo.delivery().transportStatus()).toBe(TransportStatus.CLAIMED);
   });
 
@@ -128,7 +129,7 @@ describe('Cargo lifecycle scenario', () => {
     await register(trackingId, HandlingEventType.RECEIVE, 'CNHKG', null, '2009-03-01');
     await register(trackingId, HandlingEventType.LOAD, 'CNHKG', 'V300', '2009-03-03');
 
-    expect((await cargoRepo.find(trackingId)).delivery().isMisdirected()).toBe(true);
+    expect((await cargoRepo.find(TrackingId(trackingId))).delivery().isMisdirected()).toBe(true);
   });
 
   test('change destination causes MISROUTED if itinerary does not satisfy new spec', async () => {
@@ -140,7 +141,7 @@ describe('Cargo lifecycle scenario', () => {
       Leg(v200, NEWYORK,  STOCKHOLM, new Date('2009-03-14'), new Date('2009-03-16')),
     ]), trackingId);
 
-    await BookingService.changeDestination(trackingId.idString(), 'FIHEL');
-    expect((await cargoRepo.find(trackingId)).delivery().routingStatus()).toBe(RoutingStatus.MISROUTED);
+    await BookingService.changeDestination(trackingId, 'FIHEL');
+    expect((await cargoRepo.find(TrackingId(trackingId))).delivery().routingStatus()).toBe(RoutingStatus.MISROUTED);
   });
 });

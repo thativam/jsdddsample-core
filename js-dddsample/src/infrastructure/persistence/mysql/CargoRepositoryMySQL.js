@@ -49,24 +49,21 @@ function CargoRepositoryMySQL(pool, findLocation, findVoyage, lookupHandlingHist
     return _buildCargo(rows[0]);
   }
 
-  async function store(cargo) {
+  async function store(_, trackingId, originCode, _routeSpecOriginCode, destCode, arrivalDeadline, legs) {
     const conn = await pool.getConnection();
     try {
       await conn.beginTransaction();
-      const tid = cargo.trackingId().idString();
       await conn.execute(
         'INSERT INTO cargos (tracking_id, origin_unlocode, dest_unlocode, arrival_deadline) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE dest_unlocode = VALUES(dest_unlocode), arrival_deadline = VALUES(arrival_deadline)',
-        [tid, cargo.origin().unLocode().idString(), cargo.routeSpecification().destination().unLocode().idString(), cargo.routeSpecification().arrivalDeadline()]
+        [trackingId, originCode, destCode, arrivalDeadline]
       );
-      await conn.execute('DELETE FROM itinerary_legs WHERE tracking_id = ?', [tid]);
-      const itinerary = cargo.itinerary();
-      if (itinerary) {
-        const legs = itinerary.legs();
+      await conn.execute('DELETE FROM itinerary_legs WHERE tracking_id = ?', [trackingId]);
+      if (legs) {
         for (let i = 0; i < legs.length; i++) {
           const leg = legs[i];
           await conn.execute(
             'INSERT INTO itinerary_legs (tracking_id, seq, voyage_number, load_unlocode, unload_unlocode, load_time, unload_time) VALUES (?,?,?,?,?,?,?)',
-            [tid, i, leg.voyage().voyageNumber().idString(), leg.loadLocation().unLocode().idString(), leg.unloadLocation().unLocode().idString(), leg.loadTime(), leg.unloadTime()]
+            [trackingId, i, leg.voyageNumber, leg.from, leg.to, leg.loadTime, leg.unloadTime]
           );
         }
       }

@@ -1,0 +1,4 @@
+division,server,dir,installOk,unitTotal,unitPassed,unitFailed,statementsPct,branchesPct,linesPct,functionsPct,acceptanceTotal,acceptancePassed,acceptanceFailed,acceptanceFlaky,acceptanceSkipped,notes
+config-valid,alpha,dist/distributedValid/alpha-test-server,true,172,172,0,79.27,68.01,83.53,82.78,5,5,0,0,0,
+config-valid,beta,dist/distributedValid/beta-test-server,true,172,172,0,78.69,68.01,82.79,82.11,5,5,0,0,0,
+config-valid,gamma,dist/distributedValid/gamma-test-server,true,172,172,0,78.93,68.01,83.07,82.11,5,5,0,0,0,

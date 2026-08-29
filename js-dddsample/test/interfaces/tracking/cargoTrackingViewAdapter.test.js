@@ -1,4 +1,4 @@
-import CargoTrackingViewAdapter from '../../../src/interfaces/tracking/CargoTrackingViewAdapter.js';
+import CargoTrackingViewAdapter, { HandlingEventViewAdapter } from '../../../src/interfaces/tracking/CargoTrackingViewAdapter.js';
 import Cargo              from '../../../src/domain/model/cargo/Cargo.js';
 import TrackingId         from '../../../src/domain/model/cargo/TrackingId.js';
 import RouteSpecification from '../../../src/domain/model/cargo/RouteSpecification.js';
@@ -12,22 +12,51 @@ function makeCargo() {
   return Cargo(TrackingId('XYZ'), RouteSpecification(HANGZHOU, HELSINKI, new Date('2099-12-31')));
 }
 
+/** Helper: extract primitives from cargo + events and build the adapter. */
+function buildAdapter(cargo, handlingEvents = []) {
+  const delivery  = cargo.delivery();
+  const itinerary = cargo.itinerary();
+  const nextAct   = delivery.nextExpectedActivity();
+  return CargoTrackingViewAdapter(
+    cargo.trackingId().idString(),
+    cargo.origin().name(),
+    cargo.routeSpecification().destination().name(),
+    delivery.isMisdirected(),
+    delivery.transportStatus(),
+    delivery.lastKnownLocation() ? delivery.lastKnownLocation().name() : '',
+    delivery.currentVoyage() ? delivery.currentVoyage().voyageNumber().idString() : '',
+    delivery.estimatedTimeOfArrival(),
+    nextAct ? {
+      type:         nextAct.type(),
+      locationName: nextAct.location().name(),
+      voyageNumber: nextAct.voyage() ? nextAct.voyage().voyageNumber().idString() : null,
+    } : null,
+    handlingEvents.map(e => HandlingEventViewAdapter(
+      e.location().name(),
+      e.completionTime(),
+      e.type(),
+      e.voyage() && e.voyage().voyageNumber().idString() !== '' ? e.voyage().voyageNumber().idString() : '',
+      itinerary ? itinerary.isExpected(e) : false,
+    )),
+  );
+}
+
 describe('CargoTrackingViewAdapter', () => {
   test('getTrackingId returns correct id', () => {
     const cargo   = makeCargo();
-    const adapter = CargoTrackingViewAdapter(cargo, []);
+    const adapter = buildAdapter(cargo);
     expect(adapter.getTrackingId()).toBe('XYZ');
   });
 
   test('getOrigin returns origin location name', () => {
     const cargo   = makeCargo();
-    const adapter = CargoTrackingViewAdapter(cargo, []);
+    const adapter = buildAdapter(cargo);
     expect(adapter.getOrigin()).toBe('Hangzhou');
   });
 
   test('getDestination returns destination name', () => {
     const cargo   = makeCargo();
-    const adapter = CargoTrackingViewAdapter(cargo, []);
+    const adapter = buildAdapter(cargo);
     expect(adapter.getDestination()).toBe('Helsinki');
   });
 
@@ -42,7 +71,7 @@ describe('CargoTrackingViewAdapter', () => {
     ];
     cargo.deriveDeliveryProgress(HandlingHistory(events));
 
-    const adapter = CargoTrackingViewAdapter(cargo, events);
+    const adapter = buildAdapter(cargo, events);
     expect(adapter.getStatusText()).toBe('In port Helsinki');
   });
 
@@ -55,7 +84,7 @@ describe('CargoTrackingViewAdapter', () => {
     ];
     cargo.deriveDeliveryProgress(HandlingHistory(events));
 
-    const adapter      = CargoTrackingViewAdapter(cargo, events);
+    const adapter      = buildAdapter(cargo, events);
     const eventAdapters = adapter.getEvents();
     expect(eventAdapters).toHaveLength(3);
   });
@@ -69,7 +98,7 @@ describe('CargoTrackingViewAdapter', () => {
     ];
     cargo.deriveDeliveryProgress(HandlingHistory(events));
 
-    const [receive, load, unload] = CargoTrackingViewAdapter(cargo, events).getEvents();
+    const [receive, load, unload] = buildAdapter(cargo, events).getEvents();
 
     expect(receive.getType()).toBe('RECEIVE');
     expect(receive.getLocation()).toBe('Hangzhou');
@@ -92,7 +121,7 @@ describe('CargoTrackingViewAdapter', () => {
     // No itinerary assigned → isExpected is false
     cargo.deriveDeliveryProgress(HandlingHistory(events));
 
-    const adapter      = CargoTrackingViewAdapter(cargo, events);
+    const adapter      = buildAdapter(cargo, events);
     const [receiveEv]  = adapter.getEvents();
     // Without an assigned itinerary the receive event is not expected
     expect(receiveEv.isExpected()).toBe(false);
@@ -100,7 +129,7 @@ describe('CargoTrackingViewAdapter', () => {
 
   test('isMisdirected reflects delivery state', () => {
     const cargo   = makeCargo();
-    const adapter = CargoTrackingViewAdapter(cargo, []);
+    const adapter = buildAdapter(cargo);
     // No events loaded → not misdirected
     expect(adapter.isMisdirected()).toBe(false);
   });

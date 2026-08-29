@@ -11,10 +11,10 @@ function LocationRepositoryMySQL(pool) {
     return Location(UnLocode(rows[0].unlocode), rows[0].name);
   }
 
-  async function store(location) {
+  async function store(_, unLocodeStr, name) {
     await pool.execute(
       'INSERT INTO locations (unlocode, name) VALUES (?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name)',
-      [location.unLocode().idString(), location.name()]
+      [unLocodeStr, name]
     );
   }
 

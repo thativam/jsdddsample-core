@@ -10,7 +10,30 @@ import { v100 } from '../../../../src/infrastructure/sampledata/SampleVoyages.js
 const NOW = new Date();
 
 function makeCargo() {
-  return Cargo(new TrackingId('XYZ'), new RouteSpecification(STOCKHOLM, MELBOURNE, new Date('2099-12-31')));
+  return Cargo(TrackingId('XYZ'), RouteSpecification(STOCKHOLM, MELBOURNE, new Date('2099-12-31')));
+}
+
+function extractLegs(cargo) {
+  const itinerary = cargo.itinerary();
+  return itinerary ? itinerary.legs().map(leg => ({
+    voyageNumber: leg.voyage().voyageNumber().idString(),
+    from:         leg.loadLocation().unLocode().idString(),
+    to:           leg.unloadLocation().unLocode().idString(),
+    loadTime:     leg.loadTime(),
+    unloadTime:   leg.unloadTime(),
+  })) : [];
+}
+
+function cargoToDTO(cargo) {
+  const legs = extractLegs(cargo);
+  return toDTO(
+    cargo.trackingId().idString(),
+    cargo.origin().unLocode().idString(),
+    cargo.routeSpecification().destination().unLocode().idString(),
+    cargo.routeSpecification().arrivalDeadline(),
+    legs,
+    cargo.delivery().routingStatus() === 'MISROUTED',
+  );
 }
 
 describe('CargoRoutingDTOAssembler', () => {
@@ -22,7 +45,7 @@ describe('CargoRoutingDTOAssembler', () => {
     ]);
     cargo.assignToRoute(itinerary);
 
-    const dto = toDTO(cargo);
+    const dto = cargoToDTO(cargo);
 
     expect(dto.legs).toHaveLength(2);
 
@@ -39,7 +62,7 @@ describe('CargoRoutingDTOAssembler', () => {
 
   test('toDTO without itinerary returns trackingId, origin, destination and empty legs', () => {
     const cargo = makeCargo();
-    const dto   = toDTO(cargo);
+    const dto   = cargoToDTO(cargo);
 
     expect(dto.trackingId).toBe('XYZ');
     expect(dto.origin).toBe('SESTO');

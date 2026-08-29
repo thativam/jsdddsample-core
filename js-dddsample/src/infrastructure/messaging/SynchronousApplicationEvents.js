@@ -6,16 +6,16 @@ function setCargoInspectionService(ref, svc) {
   ref.cargoInspectionService = svc;
 }
 
-function cargoWasHandled(ref, event) {
-  ref.cargoInspectionService.inspectCargo(event.cargo().trackingId().idString());
+function cargoWasHandled(ref, eventData) {
+  ref.cargoInspectionService.inspectCargo(eventData.cargoTrackingId);
 }
 
-function cargoWasMisdirected(ref, cargo) {
-  console.warn(`Cargo ${cargo.trackingId()} was misdirected`);
+function cargoWasMisdirected(ref, cargoTrackingId) {
+  console.warn(`Cargo ${cargoTrackingId} was misdirected`);
 }
 
-function cargoHasArrived(ref, cargo) {
-  console.info(`Cargo ${cargo.trackingId()} has arrived`);
+function cargoHasArrived(ref, cargoTrackingId) {
+  console.info(`Cargo ${cargoTrackingId} has arrived`);
 }
 
 function receivedHandlingEventRegistrationAttempt(ref, attempt) {

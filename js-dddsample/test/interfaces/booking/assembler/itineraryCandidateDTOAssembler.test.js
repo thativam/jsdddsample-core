@@ -1,6 +1,6 @@
 import { toDTO, fromDTO } from '../../../../src/interfaces/booking/assembler/ItineraryCandidateDTOAssembler.js';
-import Itinerary    from '../../../../src/domain/model/cargo/Itinerary.js';
-import Leg          from '../../../../src/domain/model/cargo/Leg.js';
+import Itinerary from '../../../../src/domain/model/cargo/Itinerary.js';
+import Leg       from '../../../../src/domain/model/cargo/Leg.js';
 import LocationRepositoryInMem from '../../../../src/infrastructure/persistence/inmemory/LocationRepositoryInMem.js';
 import VoyageRepositoryInMem   from '../../../../src/infrastructure/persistence/inmemory/VoyageRepositoryInMem.js';
 import { configure as configureServiceContext } from '../../../../src/ServiceContext.js';
@@ -26,7 +26,13 @@ describe('ItineraryCandidateDTOAssembler', () => {
       Leg(v100, ROTTERDAM, MELBOURNE, NOW, NOW),
     ]);
 
-    const dto = toDTO(itinerary);
+    const dto = toDTO(itinerary.legs().map(leg => ({
+      voyageNumber: leg.voyage().voyageNumber().idString(),
+      from:         leg.loadLocation().unLocode().idString(),
+      to:           leg.unloadLocation().unLocode().idString(),
+      loadTime:     leg.loadTime(),
+      unloadTime:   leg.unloadTime(),
+    })));
 
     expect(dto.legs).toHaveLength(2);
 

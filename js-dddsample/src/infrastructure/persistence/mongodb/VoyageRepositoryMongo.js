@@ -6,16 +6,8 @@ function VoyageRepositoryMongo(collection, findLocation) {
     return VoyageMapper.toDomain(doc, findLocation);
   }
 
-  async function store(voyage) {
-    const doc = VoyageMapper.toDocument(
-      voyage.voyageNumber().idString(),
-      voyage.schedule().carrierMovements().map(cm => ({
-        fromCode:      cm.departureLocation().unLocode().idString(),
-        toCode:        cm.arrivalLocation().unLocode().idString(),
-        departureTime: cm.departureTime(),
-        arrivalTime:   cm.arrivalTime(),
-      })),
-    );
+  async function store(_, voyageNumberStr, carrierMovements) {
+    const doc = VoyageMapper.toDocument(voyageNumberStr, carrierMovements);
     await collection.replaceOne({ _id: doc._id }, doc, { upsert: true });
   }
 

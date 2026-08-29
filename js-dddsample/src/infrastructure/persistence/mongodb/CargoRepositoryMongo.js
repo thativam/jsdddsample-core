@@ -20,22 +20,8 @@ function CargoRepositoryMongo(collection, findLocation, findVoyage, lookupHandli
     return cargo;
   }
 
-  async function store(cargo) {
-    const itinerary = cargo.itinerary();
-    const doc = CargoMapper.toDocument(
-      cargo.trackingId().idString(),
-      cargo.origin().unLocode().idString(),
-      cargo.routeSpecification().origin().unLocode().idString(),
-      cargo.routeSpecification().destination().unLocode().idString(),
-      cargo.routeSpecification().arrivalDeadline(),
-      itinerary ? itinerary.legs().map(leg => ({
-        voyageNumber: leg.voyage().voyageNumber().idString(),
-        from:         leg.loadLocation().unLocode().idString(),
-        to:           leg.unloadLocation().unLocode().idString(),
-        loadTime:     leg.loadTime(),
-        unloadTime:   leg.unloadTime(),
-      })) : null,
-    );
+  async function store(_, trackingId, originCode, routeSpecOriginCode, routeSpecDestCode, arrivalDeadline, legs) {
+    const doc = CargoMapper.toDocument(trackingId, originCode, routeSpecOriginCode, routeSpecDestCode, arrivalDeadline, legs);
     await collection.replaceOne({ _id: doc._id }, doc, { upsert: true });
   }
 

@@ -13,14 +13,37 @@ async function listShippingLocations() {
 }
 
 async function bookNewCargo(origin, destination, arrivalDeadline) {
-  const trackingId = await BookingService.bookNewCargo(origin, destination, arrivalDeadline);
-  return trackingId.idString();
+  return await BookingService.bookNewCargo(origin, destination, arrivalDeadline);
+}
+
+function _extractCargoLegs(cargo) {
+  console.log("[BookinServiceCascade] Cargo is ", cargo)
+  const itinerary = cargo.itinerary();
+  return itinerary ? itinerary.legs().map(leg => ({
+    voyageNumber: leg.voyage().voyageNumber().idString(),
+    from:         leg.loadLocation().unLocode().idString(),
+    to:           leg.unloadLocation().unLocode().idString(),
+    loadTime:     leg.loadTime(),
+    unloadTime:   leg.unloadTime(),
+  })) : [];
+}
+
+function _cargoToDTO(cargo) {
+  const legs = _extractCargoLegs(cargo);
+  return cargoToDTO(
+    cargo.trackingId().idString(),
+    cargo.origin().unLocode().idString(),
+    cargo.routeSpecification().destination().unLocode().idString(),
+    cargo.routeSpecification().arrivalDeadline(),
+    legs,
+    cargo.delivery().routingStatus() === 'MISROUTED',
+  );
 }
 
 async function loadCargoForRouting(trackingId) {
   const cargo = await cargoRepository.find(TrackingId(trackingId));
   if (!cargo) return null;
-  return cargoToDTO(cargo);
+  return _cargoToDTO(cargo);
 }
 
 async function assignCargoToRoute(trackingIdStr, routeCandidateDTO) {
@@ -34,12 +57,20 @@ async function changeDestination(trackingId, destinationUnLocode) {
 
 async function listAllCargos() {
   const cargos = await cargoRepository.getAll();
-  return cargos.map(c => cargoToDTO(c));
+  return cargos.map(_cargoToDTO);
 }
 
 async function requestPossibleRoutesForCargo(trackingId) {
   const itineraries = await BookingService.requestPossibleRoutesForCargo(trackingId);
-  return itineraries.map(it => itinToDTO(it));
+  return itineraries.map(it => itinToDTO(
+    it.legs().map(leg => ({
+      voyageNumber: leg.voyage().voyageNumber().idString(),
+      from:         leg.loadLocation().unLocode().idString(),
+      to:           leg.unloadLocation().unLocode().idString(),
+      loadTime:     leg.loadTime(),
+      unloadTime:   leg.unloadTime(),
+    }))
+  ));
 }
 
 export {

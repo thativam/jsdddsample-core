@@ -28,22 +28,20 @@ function VoyageRepositoryMySQL(pool, findLocation) {
     return Voyage(VoyageNumber(voyageRows[0].voyage_number), Schedule(movements));
   }
 
-  async function store(voyage) {
-    const vNum = voyage.voyageNumber().idString();
+  async function store(_, voyageNumberStr, carrierMovements) {
     const conn = await pool.getConnection();
     try {
       await conn.beginTransaction();
       await conn.execute(
         'INSERT INTO voyages (voyage_number) VALUES (?) ON DUPLICATE KEY UPDATE voyage_number = VALUES(voyage_number)',
-        [vNum]
+        [voyageNumberStr]
       );
-      await conn.execute('DELETE FROM carrier_movements WHERE voyage_number = ?', [vNum]);
-      const movements = voyage.schedule().carrierMovements();
-      for (let i = 0; i < movements.length; i++) {
-        const cm = movements[i];
+      await conn.execute('DELETE FROM carrier_movements WHERE voyage_number = ?', [voyageNumberStr]);
+      for (let i = 0; i < carrierMovements.length; i++) {
+        const cm = carrierMovements[i];
         await conn.execute(
           'INSERT INTO carrier_movements (voyage_number, seq, from_unlocode, to_unlocode, departure_time, arrival_time) VALUES (?,?,?,?,?,?)',
-          [vNum, i, cm.departureLocation().unLocode().idString(), cm.arrivalLocation().unLocode().idString(), cm.departureTime(), cm.arrivalTime()]
+          [voyageNumberStr, i, cm.fromCode, cm.toCode, cm.departureTime, cm.arrivalTime]
         );
       }
       await conn.commit();

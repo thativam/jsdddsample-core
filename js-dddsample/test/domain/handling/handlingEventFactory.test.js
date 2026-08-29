@@ -18,6 +18,11 @@ import { v100 } from '../../../src/infrastructure/sampledata/SampleVoyages.js';
 const trackingId = TrackingId('ABC');
 const cargo = Cargo(trackingId, RouteSpecification(TOKYO, HELSINKI, new Date('2099-12-31')));
 
+const mockHandlingEventRepo = {
+  store:                        async () => {},
+  lookupHandlingHistoryOfCargo: async () => ({ handlingEvents: () => [] }),
+};
+
 // A mock cargo repo that finds 'ABC' and nothing else
 const foundCargoRepo = {
   find:          async (tid) => tid.idString() === 'ABC' ? cargo : null,
@@ -33,40 +38,40 @@ const notFoundCargoRepo = {
 beforeEach(() => {
   configureServiceContext(
     {
-      cargoRepository:    foundCargoRepo,
-      voyageRepository:   VoyageRepositoryInMem(),
-      locationRepository: LocationRepositoryInMem(),
+      cargoRepository:         foundCargoRepo,
+      handlingEventRepository: mockHandlingEventRepo,
+      voyageRepository:        VoyageRepositoryInMem(),
+      locationRepository:      LocationRepositoryInMem(),
     },
     null
   );
 });
 
 describe('HandlingEventFactory', () => {
-  test('createHandlingEvent with voyage returns correct event', async () => {
+  test('createHandlingEvent with voyage returns correct primitives', async () => {
     const voyageNumber = v100.voyageNumber();
     const unLocode     = STOCKHOLM.unLocode();
 
-    const event = await HandlingEventFactory.createHandlingEvent(
+    const eventData = await HandlingEventFactory.createHandlingEvent(
       new Date(), new Date(100), trackingId.idString(), voyageNumber.idString(), unLocode.idString(), HandlingEventType.LOAD
     );
 
-    expect(event).not.toBeNull();
-    expect(event.location().sameIdentityAs(STOCKHOLM)).toBe(true);
-    expect(event.voyage().voyageNumber().idString()).toBe(voyageNumber.idString());
-    expect(event.cargo().trackingId().idString()).toBe('ABC');
-    expect(event.completionTime().getTime()).toBe(100);
+    expect(eventData).not.toBeNull();
+    expect(eventData.locationCode).toBe(STOCKHOLM.unLocode().idString());
+    expect(eventData.voyageNumber).toBe(voyageNumber.idString());
+    expect(eventData.cargoTrackingId).toBe('ABC');
+    expect(eventData.completionTime.getTime()).toBe(100);
   });
 
-  test('createHandlingEvent without voyage returns event with no voyage', async () => {
-    const event = await HandlingEventFactory.createHandlingEvent(
+  test('createHandlingEvent without voyage returns null voyageNumber', async () => {
+    const eventData = await HandlingEventFactory.createHandlingEvent(
       new Date(), new Date(100), trackingId.idString(), null, STOCKHOLM.unLocode().idString(), HandlingEventType.CLAIM
     );
 
-    expect(event).not.toBeNull();
-    expect(event.location().sameIdentityAs(STOCKHOLM)).toBe(true);
-    // No voyage → returns Voyage.NONE (empty voyage number)
-    expect(event.voyage().voyageNumber().idString()).toBe('');
-    expect(event.cargo().trackingId().idString()).toBe('ABC');
+    expect(eventData).not.toBeNull();
+    expect(eventData.locationCode).toBe(STOCKHOLM.unLocode().idString());
+    expect(eventData.voyageNumber).toBeNull();
+    expect(eventData.cargoTrackingId).toBe('ABC');
   });
 
   test('unknown location throws CannotCreateHandlingEventException wrapping UnknownLocationException', async () => {
@@ -88,9 +93,10 @@ describe('HandlingEventFactory', () => {
   test('unknown tracking ID throws CannotCreateHandlingEventException wrapping UnknownCargoException', async () => {
     configureServiceContext(
       {
-        cargoRepository:    notFoundCargoRepo,
-        voyageRepository:   VoyageRepositoryInMem(),
-        locationRepository: LocationRepositoryInMem(),
+        cargoRepository:         notFoundCargoRepo,
+        handlingEventRepository: mockHandlingEventRepo,
+        voyageRepository:        VoyageRepositoryInMem(),
+        locationRepository:      LocationRepositoryInMem(),
       },
       null
     );

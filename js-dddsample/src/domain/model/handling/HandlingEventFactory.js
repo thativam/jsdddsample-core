@@ -8,7 +8,7 @@ import {
   UnknownLocationException,
   CannotCreateHandlingEventException,
 } from './exceptions.js';
-import { cargoRepository, voyageRepository, locationRepository } from '../../../ServiceContext.js';
+import { cargoRepository, voyageRepository, locationRepository, handlingEventRepository } from '../../../ServiceContext.js';
 
 async function findCargo(trackingId) {
   const cargo = await cargoRepository.find(trackingId);
@@ -44,7 +44,13 @@ async function createHandlingEvent(registrationTime, completionTime, trackingIdS
       findVoyage(voyageNumberStr ? VoyageNumber(voyageNumberStr) : null),
       findLocation(UnLocode(unlocodeStr)),
     ]);
-    return HandlingEvent(cargo, completionTime, registrationTime, type, location, voyage || undefined);
+    const event = HandlingEvent(cargo, completionTime, registrationTime, type, location, voyage || undefined);
+    const cargoTrackingId = cargo.trackingId().idString();
+    const typeName        = type.name;
+    const locationCode    = location.unLocode().idString();
+    const voyageNumber    = voyage ? voyage.voyageNumber().idString() : null;
+    await handlingEventRepository.store(event, cargoTrackingId, typeName, locationCode, voyageNumber, completionTime, registrationTime);
+    return { cargoTrackingId, typeName, locationCode, voyageNumber, completionTime };
   } catch (e) {
     throw new CannotCreateHandlingEventException(e);
   }

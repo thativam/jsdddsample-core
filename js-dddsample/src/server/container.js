@@ -107,9 +107,9 @@ function buildLocalEvents() {
       emit: (event, ...args) => mod.emit(_emitter, event, ...args),
       receivedHandlingEventRegistrationAttempt: (attempt) =>
         mod.receivedHandlingEventRegistrationAttempt(_emitter, attempt),
-      cargoWasHandled:     (event) => mod.cargoWasHandled(_emitter, event),
-      cargoWasMisdirected: (cargo) => mod.cargoWasMisdirected(_emitter, cargo),
-      cargoHasArrived:     (cargo) => mod.cargoHasArrived(_emitter, cargo),
+      cargoWasHandled:     (eventData)       => mod.cargoWasHandled(_emitter, eventData),
+      cargoWasMisdirected: (cargoTrackingId) => mod.cargoWasMisdirected(_emitter, cargoTrackingId),
+      cargoHasArrived:     (cargoTrackingId) => mod.cargoHasArrived(_emitter, cargoTrackingId),
     };
     return { applicationEvents, mq: null, disconnect: async () => {} };
   });
@@ -177,14 +177,14 @@ async function createContainer() {
         );
       } catch (e) { console.error('[handlingEventQueue]', e.message); }
     });
-    applicationEvents.on('cargoHandledQueue', async (event) => {
-      try { await CargoInspectionService.inspectCargo(event.cargo().trackingId().idString()); }
+    applicationEvents.on('cargoHandledQueue', async (eventData) => {
+      try { await CargoInspectionService.inspectCargo(eventData.cargoTrackingId); }
       catch (e) { console.error('[cargoHandledQueue]', e.message); }
     });
-    applicationEvents.on('misdirectedCargoQueue', (cargo) =>
-      console.warn(`[misdirectedCargoQueue] Cargo ${cargo.trackingId().idString()} is misdirected`));
-    applicationEvents.on('deliveredCargoQueue', (cargo) =>
-      console.info(`[deliveredCargoQueue] Cargo ${cargo.trackingId().idString()} arrived`));
+    applicationEvents.on('misdirectedCargoQueue', (cargoTrackingId) =>
+      console.warn(`[misdirectedCargoQueue] Cargo ${cargoTrackingId} is misdirected`));
+    applicationEvents.on('deliveredCargoQueue', (cargoTrackingId) =>
+      console.info(`[deliveredCargoQueue] Cargo ${cargoTrackingId} arrived`));
   }
 
   // ── Sample data ───────────────────────────────────────────────────────────────

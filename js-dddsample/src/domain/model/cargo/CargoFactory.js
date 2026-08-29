@@ -4,15 +4,16 @@ import UnLocode           from '../location/UnLocode.js';
 import { cargoRepository, locationRepository } from '../../../ServiceContext.js';
 
 async function createCargo(originUnLocodeStr, destinationUnLocodeStr, arrivalDeadline) {
-  const origin_     = UnLocode(originUnLocodeStr);
-  const destination_ = UnLocode(destinationUnLocodeStr);
-  const trackingId  = await cargoRepository.nextTrackingId();
+  const trackingId   = await cargoRepository.nextTrackingId();
   const [origin, destination] = await Promise.all([
-    locationRepository.find(origin_),
-    locationRepository.find(destination_),
+    locationRepository.find(UnLocode(originUnLocodeStr)),
+    locationRepository.find(UnLocode(destinationUnLocodeStr)),
   ]);
   const routeSpec = RouteSpecification(origin, destination, arrivalDeadline);
-  return Cargo(trackingId, routeSpec);
+  const cargo = Cargo(trackingId, routeSpec);
+  const originCode = origin.unLocode().idString();
+  await cargoRepository.store(cargo, trackingId.idString(), originCode, originCode, destination.unLocode().idString(), arrivalDeadline, null);
+  return trackingId.idString();
 }
 
 export default { createCargo };

@@ -16,16 +16,16 @@ function receivedHandlingEventRegistrationAttempt(emitter, attempt) {
   setImmediate(() => emitter.emit('handlingEventQueue', attempt));
 }
 
-function cargoWasHandled(emitter, event) {
-  setImmediate(() => emitter.emit('cargoHandledQueue', event));
+function cargoWasHandled(emitter, eventData) {
+  setImmediate(() => emitter.emit('cargoHandledQueue', eventData));
 }
 
-function cargoWasMisdirected(emitter, cargo) {
-  setImmediate(() => emitter.emit('misdirectedCargoQueue', cargo));
+function cargoWasMisdirected(emitter, cargoTrackingId) {
+  setImmediate(() => emitter.emit('misdirectedCargoQueue', cargoTrackingId));
 }
 
-function cargoHasArrived(emitter, cargo) {
-  setImmediate(() => emitter.emit('deliveredCargoQueue', cargo));
+function cargoHasArrived(emitter, cargoTrackingId) {
+  setImmediate(() => emitter.emit('deliveredCargoQueue', cargoTrackingId));
 }
 
 export { createEmitter, on, emit, receivedHandlingEventRegistrationAttempt, cargoWasHandled, cargoWasMisdirected, cargoHasArrived };

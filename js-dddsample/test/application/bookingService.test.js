@@ -5,6 +5,7 @@ import LocationRepositoryInMem     from '../../src/infrastructure/persistence/in
 import VoyageRepositoryInMem       from '../../src/infrastructure/persistence/inmemory/VoyageRepositoryInMem.js';
 import { configure as configureServiceContext, configureRouting } from '../../src/ServiceContext.js';
 
+import TrackingId    from '../../src/domain/model/cargo/TrackingId.js';
 import RoutingStatus from '../../src/domain/model/cargo/RoutingStatus.js';
 import Itinerary     from '../../src/domain/model/cargo/Itinerary.js';
 import Leg           from '../../src/domain/model/cargo/Leg.js';
@@ -26,13 +27,13 @@ function makeRepos() {
 }
 
 describe('BookingService', () => {
-  test('bookNewCargo returns a TrackingId', async () => {
+  test('bookNewCargo returns a tracking ID string', async () => {
     makeRepos();
     const trackingId = await BookingService.bookNewCargo(
       'CNHKG', 'SESTO', new Date('2009-12-31')
     );
     expect(trackingId).toBeTruthy();
-    expect(trackingId.idString()).toBeTruthy();
+    expect(typeof trackingId).toBe('string');
   });
 
   test('booked cargo can be found in repository', async () => {
@@ -40,7 +41,7 @@ describe('BookingService', () => {
     const trackingId = await BookingService.bookNewCargo(
       'CNHKG', 'SESTO', new Date('2009-12-31')
     );
-    const cargo = await cargoRepo.find(trackingId);
+    const cargo = await cargoRepo.find(TrackingId(trackingId));
     expect(cargo).not.toBeNull();
     expect(cargo.origin().sameIdentityAs(HONGKONG)).toBe(true);
   });
@@ -48,7 +49,7 @@ describe('BookingService', () => {
   test('requestPossibleRoutesForCargo returns array', async () => {
     makeRepos();
     const tid = await BookingService.bookNewCargo('CNHKG', 'SESTO', new Date('2099-12-31'));
-    const routes = await BookingService.requestPossibleRoutesForCargo(tid.idString());
+    const routes = await BookingService.requestPossibleRoutesForCargo(tid);
     expect(Array.isArray(routes)).toBe(true);
   });
 
@@ -64,24 +65,24 @@ describe('BookingService', () => {
     const itinerary = Itinerary([
       Leg(v100, HONGKONG, STOCKHOLM, new Date('2009-03-03'), new Date('2009-03-16')),
     ]);
-    await BookingService.assignCargoToRoute(itinerary, tid.idString());
-    const cargo = await cargoRepo.find(tid);
+    await BookingService.assignCargoToRoute(itinerary, tid);
+    const cargo = await cargoRepo.find(TrackingId(tid));
     expect(cargo.delivery().routingStatus()).toBe(RoutingStatus.ROUTED);
   });
 
   test('changeDestination updates route specification', async () => {
     const { cargoRepo } = makeRepos();
     const tid = await BookingService.bookNewCargo('CNHKG', 'SESTO', new Date('2009-12-31'));
-    await BookingService.changeDestination(tid.idString(), 'FIHEL');
-    const cargo = await cargoRepo.find(tid);
+    await BookingService.changeDestination(tid, 'FIHEL');
+    const cargo = await cargoRepo.find(TrackingId(tid));
     expect(cargo.routeSpecification().destination().sameIdentityAs(HELSINKI)).toBe(true);
   });
 
   test('changeDestination preserves origin', async () => {
     const { cargoRepo } = makeRepos();
     const tid = await BookingService.bookNewCargo('CNHKG', 'SESTO', new Date('2009-12-31'));
-    await BookingService.changeDestination(tid.idString(), 'FIHEL');
-    const cargo = await cargoRepo.find(tid);
+    await BookingService.changeDestination(tid, 'FIHEL');
+    const cargo = await cargoRepo.find(TrackingId(tid));
     expect(cargo.origin().sameIdentityAs(HONGKONG)).toBe(true);
   });
 });

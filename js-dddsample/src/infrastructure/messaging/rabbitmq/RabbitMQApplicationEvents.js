@@ -47,25 +47,24 @@ async function connect(url) {
       });
     },
 
-    cargoWasHandled(event) {
-      const voyageId = event.voyage() && event.voyage().voyageNumber().idString() !== ''
-        ? event.voyage().voyageNumber().idString()
-        : null;
+    cargoWasHandled(eventData) {
       publish(EXCHANGES.cargoHandledQueue, {
-        cargoTrackingId: event.cargo().trackingId().idString(),
-        type:            event.type().name,
-        locationCode:    event.location().unLocode().idString(),
-        voyageNumber:    voyageId,
-        completionTime:  event.completionTime().toISOString(),
+        cargoTrackingId: eventData.cargoTrackingId,
+        type:            eventData.typeName,
+        locationCode:    eventData.locationCode,
+        voyageNumber:    eventData.voyageNumber,
+        completionTime:  eventData.completionTime instanceof Date
+          ? eventData.completionTime.toISOString()
+          : eventData.completionTime,
       });
     },
 
-    cargoWasMisdirected(cargo) {
-      publish(EXCHANGES.misdirectedCargoQueue, { trackingId: cargo.trackingId().idString() });
+    cargoWasMisdirected(cargoTrackingId) {
+      publish(EXCHANGES.misdirectedCargoQueue, { trackingId: cargoTrackingId });
     },
 
-    cargoHasArrived(cargo) {
-      publish(EXCHANGES.deliveredCargoQueue, { trackingId: cargo.trackingId().idString() });
+    cargoHasArrived(cargoTrackingId) {
+      publish(EXCHANGES.deliveredCargoQueue, { trackingId: cargoTrackingId });
     },
   };
 

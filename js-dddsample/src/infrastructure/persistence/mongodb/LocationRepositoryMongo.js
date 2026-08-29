@@ -6,8 +6,8 @@ function LocationRepositoryMongo(collection) {
     return LocationMapper.toDomain(doc);
   }
 
-  async function store(location) {
-    const doc = LocationMapper.toDocument(location.unLocode().idString(), location.name());
+  async function store(_, unLocodeStr, name) {
+    const doc = LocationMapper.toDocument(unLocodeStr, name);
     await collection.replaceOne({ _id: doc._id }, doc, { upsert: true });
   }
 
