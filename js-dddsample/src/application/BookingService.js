@@ -3,6 +3,7 @@ import CargoFactory       from '../domain/model/cargo/CargoFactory.js';
 import TrackingId         from '../domain/model/cargo/TrackingId.js';
 import UnLocode           from '../domain/model/location/UnLocode.js';
 import { cargoRepository, locationRepository, routingService } from '../ServiceContext.js';
+import { cargoBookingsTotal } from '../infrastructure/metrics/MetricsCollector.js';
 
 function _cargoStoreArgs(cargo) {
   console.log("[BookingService] Cargo is ", cargo)
@@ -32,6 +33,7 @@ function _cargoStoreArgs(cargo) {
  */
 async function bookNewCargo(originUnLocodeStr, destinationUnLocodeStr, arrivalDeadline) {
   const trackingIdStr = await CargoFactory.createCargo(originUnLocodeStr, destinationUnLocodeStr, arrivalDeadline);
+  cargoBookingsTotal.inc();
   console.info(`Booked new cargo with tracking id ${trackingIdStr}`);
   return trackingIdStr;
 }

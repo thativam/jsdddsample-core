@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "dist": "js-distributor-scripts -c ./utils/config-valid.yml",
-    "migrate:test": "node scripts/orchestrate-migration-tests.mjs"
+    "migrate:test": "node scripts/orchestrate-migration-tests.mjs",
+    "inject:metrics": "node scripts/inject-metrics.mjs"
   },
   "author": "",
   "license": "ISC",

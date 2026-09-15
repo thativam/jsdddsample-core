@@ -1,5 +1,6 @@
 import TrackingId from '../domain/model/cargo/TrackingId.js';
 import { cargoRepository, handlingEventRepository, applicationEvents } from '../ServiceContext.js';
+import { cargoInspectionsTotal } from '../infrastructure/metrics/MetricsCollector.js';
 
 function _cargoStoreArgs(cargo) {
   console.log("[CargoInspection] Cargo is ", cargo)
@@ -35,6 +36,7 @@ async function inspectCargo(trackingIdStr) {
     console.warn(`Can't inspect non-existing cargo ${trackingIdStr}`);
     return;
   }
+  cargoInspectionsTotal.inc();
   cargo.deriveDeliveryProgress(handlingHistory);
   if (cargo.delivery().isMisdirected())           applicationEvents.cargoWasMisdirected(cargo.trackingId().idString());
   if (cargo.delivery().isUnloadedAtDestination()) applicationEvents.cargoHasArrived(cargo.trackingId().idString());

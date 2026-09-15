@@ -11,6 +11,8 @@ import '../bootstrap.js';
 import adminRoutes    from './routes/adminRoutes.js';
 import trackingRoutes from './routes/trackingRoutes.js';
 import handlingRoutes from './routes/handlingRoutes.js';
+import metricsRouter  from './routes/metricsRoutes.js';
+import httpMetrics    from './middleware/httpMetrics.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = dirname(__filename);
@@ -19,6 +21,7 @@ const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(httpMetrics);
 app.use(express.static(join(__dirname, 'public')));
 app.use('/views', express.static(join(__dirname, 'views')));
 
@@ -28,6 +31,7 @@ app.get('/admin', (req, res) => res.redirect('/views/admin/list.html'));
 app.use('/admin', adminRoutes());
 app.use('/track', trackingRoutes());
 app.use('/', handlingRoutes());
+app.use('/', metricsRouter);
 
 // start() only handles listening — infrastructure is already initialized above.
 function start() {

@@ -1,0 +1,234 @@
+#!/usr/bin/env node
+/**
+ * Claude Code generated file.
+ * inject-metrics.mjs
+ *
+ * Wires Prometheus metrics into every generated distributed server without
+ * touching app.js. Uses Node's --import flag so metricsServer.js starts
+ * automatically before the existing entry point.
+ *
+ *   1. Reads the distributor config YAML.
+ *   2. Assigns a METRICS_PORT to each real server (base 9091 + index).
+ *   3. Copies distributor/utils/metricsServer.js → <server>/src/server/metricsServer.js.
+ *   4. Patches <server>/package.json: prepends --import ./src/server/metricsServer.js
+ *      and sets METRICS_PORT in the start script. Idempotent.
+ *   5. Rewrites observability/prometheus/targets/app-instances.yml.
+ *   6. Prints a compose.yaml snippet with port mappings.
+ *
+ * Run AFTER js-distributor-scripts:
+ *
+ *   node scripts/inject-metrics.mjs
+ *   node scripts/inject-metrics.mjs --config ./utils/config-valid.yml
+ *   node scripts/inject-metrics.mjs --metrics-port-base 9100
+ */
+
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import yaml from 'js-yaml';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const DISTRIBUTOR_ROOT = path.resolve(__dirname, '..');
+const REPO_ROOT        = path.resolve(DISTRIBUTOR_ROOT, '..');
+
+// ── CLI args ──────────────────────────────────────────────────────────────────
+
+const args = process.argv.slice(2);
+function flag(name, fallback) {
+  const i = args.indexOf(`--${name}`);
+  return i === -1 ? fallback : args[i + 1];
+}
+
+const configArg       = flag('config', path.join(DISTRIBUTOR_ROOT, 'utils/config-valid.yml'));
+const metricsPortBase = Number(flag('metrics-port-base', '9091'));
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function log(msg) { console.log(`[inject-metrics] ${msg}`); }
+
+function loadConfig(configPath) {
+  if (!existsSync(configPath)) throw new Error(`Config not found: ${configPath}`);
+  return yaml.load(readFileSync(configPath, 'utf8'));
+}
+
+function resolveOutputDir(config, configPath) {
+  const gen = config.codeGenerationParameters ?? {};
+  return path.resolve(path.dirname(configPath), gen.outputFolder ?? '../distributed');
+}
+
+// ── Step 3: copy metricsServer.js ────────────────────────────────────────────
+
+function copyMetricsServer(serverDir) {
+  const src  = path.join(DISTRIBUTOR_ROOT, 'utils/metricsServer.js');
+  const dest = path.join(serverDir, 'src/server/metricsServer.js');
+
+  if (!existsSync(src)) throw new Error(`Source not found: ${src}`);
+  if (!existsSync(path.dirname(dest))) {
+    log(`  ⚠  src/server/ not found in ${path.basename(serverDir)} — run dist first`);
+    return false;
+  }
+
+  copyFileSync(src, dest);
+  log(`  copied → ${path.relative(DISTRIBUTOR_ROOT, dest)}`);
+  return true;
+}
+
+// ── Step 4: patch package.json start script ───────────────────────────────────
+//
+// Transforms the existing start command so that Node preloads metricsServer.js
+// before the entry point, and sets METRICS_PORT for that process.
+//
+// Before:  node --env-file=.env src/server/app.js
+// After:   METRICS_PORT=9091 node --import ./src/server/metricsServer.js --env-file=.env src/server/app.js
+//
+// On Windows, cross-env is used automatically if detected in devDependencies.
+
+const IMPORT_FLAG = '--import ./src/server/metricsServer.js';
+
+function patchPackageJson(serverDir, metricsPort) {
+  const pkgPath = path.join(serverDir, 'package.json');
+  if (!existsSync(pkgPath)) {
+    log(`  ⚠  package.json not found in ${path.basename(serverDir)}`);
+    return false;
+  }
+
+  const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
+  const scripts = pkg.scripts ?? {};
+  const original = scripts.start ?? '';
+
+  // Idempotent check
+  if (original.includes(IMPORT_FLAG)) {
+    log(`  package.json already patched, skipping`);
+    return true;
+  }
+
+  // Detect if cross-env is available for Windows compat
+  const hasCrossEnv = !!pkg.devDependencies?.['cross-env'] || !!pkg.dependencies?.['cross-env'];
+  const envPrefix   = hasCrossEnv
+    ? `cross-env METRICS_PORT=${metricsPort} `
+    : `METRICS_PORT=${metricsPort} `;
+
+  // Inject --import flag after "node" and prepend METRICS_PORT env var
+  const patched = original.startsWith('node ')
+    ? `${envPrefix}node ${IMPORT_FLAG} ${original.slice('node '.length)}`
+    : `${envPrefix}${original}`; // fallback: just prepend env var
+
+  pkg.scripts = { ...scripts, start: patched };
+  writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
+  log(`  patched package.json start → ${patched}`);
+  return true;
+}
+
+// ── Step 5: regenerate app-instances.yml ─────────────────────────────────────
+
+function regeneratePrometheusTargets(monolithPort, serverAssignments) {
+  const targetsPath = path.join(
+    REPO_ROOT, 'observability/prometheus/targets/app-instances.yml',
+  );
+
+  const lines = [
+    '# AUTO-GENERATED by inject-metrics.mjs — do not edit by hand.',
+    '# This file is recreated on every "npm run inject:metrics" run.',
+    '# Port assignments come from the config YAML server list.',
+    '# To change ports: update --metrics-port-base flag, then re-run inject:metrics.',
+    '',
+    '# Prometheus runs with network_mode: host, so targets use localhost.',
+    '',
+    '# ── Monolith ─────────────────────────────────────────────────────────────────',
+    '# /metrics served on the main app port via metricsRoutes.js.',
+    '- targets:',
+    `    - localhost:${monolithPort}`,
+    '  labels:',
+    '    app: dddsample',
+    '    instance: monolith',
+    '',
+    '# ── Distributed servers ──────────────────────────────────────────────────────',
+    '# /metrics served on a dedicated METRICS_PORT via metricsServer.js (--import).',
+    '# Servers must use network_mode: host in compose.yaml.',
+    '# Prometheus reloads this file every 30 s — no restart needed.',
+    '- targets:',
+    ...serverAssignments.map(
+      ({ id, appPort, metricsPort }) =>
+        `    - localhost:${metricsPort}   # ${id}  (app port ${appPort})`,
+    ),
+    '  labels:',
+    '    app: dddsample',
+    '',
+  ];
+
+  mkdirSync(path.dirname(targetsPath), { recursive: true });
+  writeFileSync(targetsPath, lines.join('\n'), 'utf8');
+  log(`  wrote ${path.relative(REPO_ROOT, targetsPath)}`);
+}
+
+// ── Step 6: compose snippet ──────────────────────────────────────────────────
+
+function printComposeSnippet(serverAssignments) {
+  log('\n── compose.yaml additions ───────────────────────────────────────────────────');
+  log('Add network_mode and METRICS_PORT to each service in your distributed compose.yaml.');
+  log('With host networking, no port: mapping is needed for the metrics port.\n');
+  for (const { id, metricsPort } of serverAssignments) {
+    console.log(`  ${id}:`);
+    console.log(`    network_mode: host`);
+    console.log(`    environment:`);
+    console.log(`      METRICS_PORT: "${metricsPort}"`);
+    console.log('');
+  }
+}
+
+// ── main ─────────────────────────────────────────────────────────────────────
+
+function main() {
+  const configPath = path.resolve(configArg);
+  log(`Config: ${configPath}`);
+
+  const config    = loadConfig(configPath);
+  const outputDir = resolveOutputDir(config, configPath);
+  const servers   = config.servers ?? [];
+
+  if (servers.length === 0) {
+    log('No servers defined — nothing to do.');
+    return;
+  }
+
+  const monolithPort     = 8080;
+  const serverAssignments = servers.map((server, idx) => ({
+    id:          server.id,
+    appPort:     server.http?.port ?? monolithPort,
+    metricsPort: metricsPortBase + idx,
+    serverDir:   path.join(outputDir, server.id),
+  }));
+
+  log('\nPort assignments:');
+  for (const { id, appPort, metricsPort } of serverAssignments) {
+    log(`  ${id}  app=${appPort}  metrics=${metricsPort}`);
+  }
+
+  let allOk = true;
+
+  for (const { id, metricsPort, serverDir } of serverAssignments) {
+    log(`\n-- ${id} --`);
+    if (!existsSync(serverDir)) {
+      log(`  ⚠  Not found: ${serverDir} — run "npm run dist" first`);
+      allOk = false;
+      continue;
+    }
+    const copied  = copyMetricsServer(serverDir);
+    const patched = copied && patchPackageJson(serverDir, metricsPort);
+    if (!patched) allOk = false;
+  }
+
+  log('\n-- Prometheus targets --');
+  regeneratePrometheusTargets(monolithPort, serverAssignments);
+
+  printComposeSnippet(serverAssignments);
+
+  if (!allOk) {
+    log('⚠  Some servers were skipped. Generate them first with "npm run dist".');
+    process.exitCode = 1;
+  } else {
+    log('Done.');
+  }
+}
+
+main();

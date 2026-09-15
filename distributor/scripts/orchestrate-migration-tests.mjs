@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 /**
+ * Claude Code generated file.
  * Orchestrates the monolith -> microservice migration pipeline end to end:
  *
  *   1. Discovers every division config under distributor/configs/*.yml
