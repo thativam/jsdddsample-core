@@ -2,11 +2,11 @@ services:
   prometheus:
     image: prom/prometheus:v2.52.0
     container_name: dddsample-prometheus
-    # Host network lets Prometheus reach app instances bound to host ports
-    # (monolith on :8080, distributed servers on their METRICS_PORT).
-    # The ports: mapping is intentionally omitted — with host networking
-    # Prometheus binds :9090 directly on the host.
-    network_mode: host
+    # Bridge network with host-gateway so Prometheus can reach app instances
+    # running on the host (Windows/Mac: Docker Desktop routes host.docker.internal
+    # to the host automatically; Linux: extra_hosts below handles it).
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./observability/prometheus/targets:/etc/prometheus/targets:ro
@@ -16,15 +16,15 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--storage.tsdb.retention.time=15d'
       - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
     restart: unless-stopped
 
   grafana:
     image: grafana/grafana:10.4.3
     container_name: dddsample-grafana
-    # Bridge network. Reaches Prometheus via host.docker.internal:9090
-    # (works on Docker Desktop; on Linux the extra_hosts entry below handles it).
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    depends_on:
+      - prometheus
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin

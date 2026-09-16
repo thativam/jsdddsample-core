@@ -3,23 +3,23 @@
 # Port assignments come from the config YAML server list.
 # To change ports: update --metrics-port-base flag, then re-run inject:metrics.
 
-# Prometheus runs with network_mode: host, so targets use localhost.
+# host.docker.internal resolves to the Windows/Mac host on Docker Desktop,
+# and to the host-gateway on Linux (see extra_hosts in docker-compose.observability.yml).
 
 # ── Monolith ─────────────────────────────────────────────────────────────────
 # /metrics served on the main app port via metricsRoutes.js.
 - targets:
-    - localhost:8080
+    - host.docker.internal:8080
   labels:
     app: dddsample
     instance: monolith
 
 # ── Distributed servers ──────────────────────────────────────────────────────
 # /metrics served on a dedicated METRICS_PORT via metricsServer.js (--import).
-# Servers must use network_mode: host in compose.yaml.
 # Prometheus reloads this file every 30 s — no restart needed.
 - targets:
-    - localhost:9091   # alpha  (app port 8080)
-    - localhost:9092   # beta   (app port 3002)
-    - localhost:9093   # gamma  (app port 3003)
+    - host.docker.internal:9091   # alpha  (app port 8080)
+    - host.docker.internal:9092   # beta   (app port 3002)
+    - host.docker.internal:9093   # gamma  (app port 3003)
   labels:
     app: dddsample
