@@ -26,8 +26,8 @@
       "options": { "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
       "targets": [
         {
-          "expr": "sum by (instance, route) (rate(http_requests_total[1m]))",
-          "legendFormat": "{{instance}} {{route}}",
+          "expr": "sum by (instance, path) (rate(http_request_duration_seconds_count[1m]))",
+          "legendFormat": "{{instance}} {{path}}",
           "refId": "A"
         }
       ],
@@ -69,7 +69,7 @@
       "options": { "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
       "targets": [
         {
-          "expr": "sum by (instance, status_code) (rate(http_requests_total{status_code=~\"[45]..\"}[1m]))",
+          "expr": "sum by (instance, status_code) (rate(http_request_duration_seconds_count{status_code=~\"[45]..\"}[1m]))",
           "legendFormat": "{{instance}} HTTP {{status_code}}",
           "refId": "A"
         }
