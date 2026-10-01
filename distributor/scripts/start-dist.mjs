@@ -7,7 +7,8 @@
  *
  * Usage:
  *   node scripts/start-dist.mjs
- *   node scripts/start-dist.mjs --config ./utils/config-valid.yml
+ *   node scripts/start-dist.mjs utils/config-valid-monolith.yml
+ *   node scripts/start-dist.mjs --config utils/config-valid-monolith.yml
  *
  * Press Ctrl+C to stop all servers.
  */
@@ -29,7 +30,11 @@ function flag(name, fallback) {
   return i === -1 ? fallback : args[i + 1];
 }
 
-const configArg = flag('config', path.join(DISTRIBUTOR_ROOT, 'utils/config-valid.yml'));
+// Accept config as positional arg (first non-flag), --config flag, or default.
+const positional = args.find(a => !a.startsWith('-'));
+const configArg  = positional
+  ?? flag('config', null)
+  ?? path.join(DISTRIBUTOR_ROOT, 'utils/config-valid.yml');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

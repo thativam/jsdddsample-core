@@ -1,0 +1,47 @@
+{
+  "_generatedBy": "inject-metrics.mjs",
+  "options": {
+    "stages": [
+      {
+        "duration": "30s",
+        "target": 10
+      },
+      {
+        "duration": "2m",
+        "target": 10
+      },
+      {
+        "duration": "30s",
+        "target": 0
+      }
+    ],
+    "thresholds": {
+      "http_req_duration": [
+        "p(95)<2000"
+      ],
+      "http_req_failed": [
+        "rate<0.05"
+      ]
+    }
+  },
+  "endpoints": [
+    {
+      "id": "createCargo",
+      "server": "alpha",
+      "port": 8080,
+      "url": "http://localhost:8080/createCargo",
+      "method": "GET",
+      "params": "originUnLocodeStr=JPTKO&destinationUnLocodeStr=USNYC&arrivalDeadline=2027-12-31",
+      "weight": 3
+    },
+    {
+      "id": "inspectCargo",
+      "server": "alpha",
+      "port": 8080,
+      "url": "http://localhost:8080/inspectCargo",
+      "method": "GET",
+      "params": "trackingIdStr=TEST1",
+      "weight": 2
+    }
+  ]
+}

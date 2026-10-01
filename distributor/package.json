@@ -5,10 +5,11 @@
   "main": "index.js",
   "scripts": {
     "dist": "js-distributor-scripts -c ./utils/config-valid.yml",
+    "mono": "js-distributor-scripts -c ./utils/config-valid-monolith.yml",
     "migrate:test": "node scripts/orchestrate-migration-tests.mjs",
     "inject:metrics": "node scripts/inject-metrics.mjs",
     "start:dist": "node scripts/start-dist.mjs",
-    "load:test": "K6_PROMETHEUS_RW_SERVER_URL=http://localhost:9090/api/v1/write k6 run --out experimental-prometheus-rw scripts/load-test.js"
+    "load:test": "cross-env K6_PROMETHEUS_RW_SERVER_URL=http://localhost:9090/api/v1/write k6 run --out experimental-prometheus-rw scripts/load-test.js"
   },
   "author": "",
   "license": "ISC",
@@ -16,6 +17,7 @@
     "js-distributor": "file:../../../../Personal/js-distributor-lucredio/distributor"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "js-yaml": "^4.1.0"
   }
 }

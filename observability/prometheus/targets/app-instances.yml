@@ -16,7 +16,5 @@
 # /metrics is on the same port as the app (express-prom-bundle).
 - targets:
     - host.docker.internal:8080   # alpha
-    - host.docker.internal:3002   # beta
-    - host.docker.internal:3003   # gamma
   labels:
     app: dddsample

@@ -23,7 +23,8 @@
  *
  * Usage:
  *   node scripts/inject-metrics.mjs
- *   node scripts/inject-metrics.mjs --config ./utils/config-valid.yml
+ *   node scripts/inject-metrics.mjs utils/config-valid-monolith.yml
+ *   node scripts/inject-metrics.mjs --config utils/config-valid-monolith.yml
  */
 
 import { execSync }                              from 'node:child_process';
@@ -44,7 +45,11 @@ function flag(name, fallback) {
   return i === -1 ? fallback : args[i + 1];
 }
 
-const configArg = flag('config', path.join(DISTRIBUTOR_ROOT, 'utils/config-valid.yml'));
+// Accept config as positional arg (first non-flag), --config flag, or default.
+const positional = args.find(a => !a.startsWith('-'));
+const configArg  = positional
+  ?? flag('config', null)
+  ?? path.join(DISTRIBUTOR_ROOT, 'utils/config-valid.yml');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

@@ -1,0 +1,24 @@
+codeGenerationParameters:
+  mode: single                    # single | watch
+  inputFolder: '../../js-dddsample'              # monolith folder
+  outputFolder: '../dist/mono'  # distributed folder
+  cleanOutput: true               # delete output folder before?
+  generateProjects: false          # generate new npm projects?
+  generateDocker: true            # generate docker files for each server?
+  generateTestServers: true       # Generate test server, default is to not generate
+  generateMetricsServer: true
+  ignore:                         # ignore the following folders
+     - "node_modules"
+  #   - "main*"
+  #   - "product.js"
+default:
+  rabbit:
+    url: localhost
+    port: 5672
+servers:
+  - id: alpha
+    copyFiles:
+      - from: html_package.json    # relative to current path
+        to: package.json  
+      - from: .env
+        to: .env
