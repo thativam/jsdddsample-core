@@ -2,13 +2,22 @@
 /**
  * inject-metrics.mjs
  *
- * Run AFTER js-distributor-scripts (`npm run dist`). Does two things:
+ * Run AFTER js-distributor-scripts (`npm run dist`). Does three things:
  *
- *   1. Runs `npm install` inside every generated server directory so the
+ *   1. Patches start.js in every generated server to enable
+ *      collectDefaultMetrics (Node.js runtime metrics: CPU, memory, GC, …).
+ *      js-distributor generates `promBundle({ includeMethod: true })` without
+ *      this option, so runtime metrics are absent unless we add it here.
+ *
+ *   2. Runs `npm install` inside every generated server directory so the
  *      servers can actually start (cleanOutput:true in config wipes node_modules
  *      on every `npm run dist`).
  *
- *   2. Regenerates observability/prometheus/targets/app-instances.yml so
+ *   3. Generates load-test-config.json for k6 by resolving each function in
+ *      utils/load-test-params.json to the server URL that handles it in the
+ *      current extraction plan.
+ *
+ *   4. Regenerates observability/prometheus/targets/app-instances.yml so
  *      Prometheus knows which host:port to scrape. The distributed servers
  *      expose /metrics on their own app port via express-prom-bundle.
  *
@@ -46,6 +55,47 @@ function loadConfig(configPath) {
   return yaml.load(readFileSync(configPath, 'utf8'));
 }
 
+// ── Patch start.js — enable collectDefaultMetrics ────────────────────────────
+//
+// js-distributor generates: promBundle({ includeMethod: true })
+// We need:                  promBundle({ includeMethod: true, promClient: { collectDefaultMetrics: {} } })
+//
+// This makes prom-bundle call prom-client's collectDefaultMetrics() so that
+// Node.js runtime metrics (process_resident_memory_bytes, process_cpu_seconds_total,
+// nodejs_heap_size_used_bytes, etc.) are exported alongside HTTP metrics.
+
+// Matches single-line and multi-line promBundle({ includeMethod: true }) calls.
+const PROM_BUNDLE_RE =
+  /promBundle\(\{[\s\S]*?includeMethod\s*:\s*true[\s\S]*?\}\)/;
+
+const PROM_BUNDLE_REPLACEMENT =
+  'promBundle({ includeMethod: true, promClient: { collectDefaultMetrics: {} } })';
+
+function patchStartJs(serverDir, id) {
+  const startPath = path.join(serverDir, 'start.js');
+  if (!existsSync(startPath)) {
+    log(`  ${id}: no start.js, skipping`);
+    return;
+  }
+
+  const original = readFileSync(startPath, 'utf8');
+
+  if (!PROM_BUNDLE_RE.test(original)) {
+    log(`  ${id}: start.js — promBundle call not found, skipping`);
+    return;
+  }
+
+  const patched = original.replace(PROM_BUNDLE_RE, PROM_BUNDLE_REPLACEMENT);
+
+  if (patched === original) {
+    log(`  ${id}: start.js already patched`);
+    return;
+  }
+
+  writeFileSync(startPath, patched, 'utf8');
+  log(`  ${id}: start.js patched — collectDefaultMetrics enabled`);
+}
+
 // ── npm install in generated servers ─────────────────────────────────────────
 //
 // cleanOutput:true in config-valid.yml deletes the entire output folder before
@@ -70,6 +120,65 @@ function installDeps(serverDir, id) {
   } catch (err) {
     const msg = (err.stderr?.toString() || err.message || '').trim();
     log(`  ${id}: npm install failed — ${msg}`);
+  }
+}
+
+// ── Generate load-test-config.json ───────────────────────────────────────────
+//
+// For each function in load-test-params.json, find which server handles it by
+// matching declarationPattern against server.functions[].declarationPattern.
+// Functions not claimed by any server default to the first server (alpha / monolith).
+// Writes distributor/scripts/load-test-config.json for k6 to open() at init time.
+
+const LOAD_TEST_PARAMS_PATH = path.join(DISTRIBUTOR_ROOT, 'utils/load-test-params.json');
+const LOAD_TEST_CONFIG_PATH = path.join(DISTRIBUTOR_ROOT, 'scripts/load-test-config.json');
+
+function generateLoadTestConfig(config, serverAssignments) {
+  if (!existsSync(LOAD_TEST_PARAMS_PATH)) {
+    log('load-test-params.json not found — skipping load test config generation');
+    return;
+  }
+
+  const params = JSON.parse(readFileSync(LOAD_TEST_PARAMS_PATH, 'utf8'));
+
+  // Build pattern → { id, port } map from config
+  const patternToServer = new Map();
+  const defaultPort = serverAssignments[0]?.appPort ?? MONOLITH_PORT;
+
+  for (const server of config.servers ?? []) {
+    const port = server.http?.port ?? MONOLITH_PORT;
+    for (const fn of server.functions ?? []) {
+      patternToServer.set(fn.declarationPattern, { id: server.id, port });
+    }
+  }
+
+  const endpoints = [];
+  for (const fn of params.functions ?? []) {
+    const match = patternToServer.get(fn.pattern);
+    const port   = match?.port ?? defaultPort;
+    const server = match?.id   ?? (serverAssignments[0]?.id ?? 'alpha');
+
+    endpoints.push({
+      id:     fn.pattern,
+      server,
+      port,
+      url:    `http://localhost:${port}${fn.path}`,
+      method: fn.method ?? 'GET',
+      params: fn.params ?? '',
+      weight: fn.weight ?? 1,
+    });
+  }
+
+  const out = {
+    _generatedBy: 'inject-metrics.mjs',
+    options:      params.options ?? {},
+    endpoints,
+  };
+
+  writeFileSync(LOAD_TEST_CONFIG_PATH, JSON.stringify(out, null, 2) + '\n', 'utf8');
+  log(`wrote ${path.relative(REPO_ROOT, LOAD_TEST_CONFIG_PATH)}`);
+  for (const ep of endpoints) {
+    log(`  ${ep.id.padEnd(20)} → ${ep.url}  (weight ${ep.weight})`);
   }
 }
 
@@ -140,14 +249,22 @@ function main() {
     appPort: server.http?.port ?? MONOLITH_PORT,
   }));
 
-  // Install dependencies in each generated server
-  log('Installing dependencies…');
+  // Patch start.js to enable collectDefaultMetrics
+  log('Patching start.js (collectDefaultMetrics)…');
   for (const { id } of serverAssignments) {
     const serverDir = path.join(distRoot, id);
     if (!existsSync(serverDir)) {
       log(`  ${id}: directory not found — run npm run dist first`);
       continue;
     }
+    patchStartJs(serverDir, id);
+  }
+
+  // Install dependencies in each generated server
+  log('Installing dependencies…');
+  for (const { id } of serverAssignments) {
+    const serverDir = path.join(distRoot, id);
+    if (!existsSync(serverDir)) continue; // already warned above
     installDeps(serverDir, id);
   }
 
@@ -155,6 +272,9 @@ function main() {
   for (const { id, appPort } of serverAssignments) {
     log(`  ${id}  →  host.docker.internal:${appPort}/metrics`);
   }
+
+  log('Generating load test config…');
+  generateLoadTestConfig(config, serverAssignments);
 
   regeneratePrometheusTargets(serverAssignments);
 

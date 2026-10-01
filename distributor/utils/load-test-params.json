@@ -1,0 +1,34 @@
+{
+  "_comment": "Defines which domain functions the load test exercises and with what parameters.",
+  "_comment2": "inject-metrics.mjs reads this file and resolves the URL for each function from config-valid.yml.",
+  "_comment3": "weight controls relative call frequency (e.g. weight:3 = called 3x as often as weight:1).",
+
+  "options": {
+    "stages": [
+      { "duration": "30s", "target": 10 },
+      { "duration": "2m",  "target": 10 },
+      { "duration": "30s", "target": 0  }
+    ],
+    "thresholds": {
+      "http_req_duration": ["p(95)<2000"],
+      "http_req_failed":   ["rate<0.05"]
+    }
+  },
+
+  "functions": [
+    {
+      "pattern":  "createCargo",
+      "path":     "/createCargo",
+      "method":   "GET",
+      "params":   "originUnLocodeStr=JPTKO&destinationUnLocodeStr=USNYC&arrivalDeadline=2027-12-31",
+      "weight":   3
+    },
+    {
+      "pattern":  "inspectCargo",
+      "path":     "/inspectCargo",
+      "method":   "GET",
+      "params":   "trackingIdStr=TEST1",
+      "weight":   2
+    }
+  ]
+}
