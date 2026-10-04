@@ -14,7 +14,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "js-distributor": "file:../../../../Personal/js-distributor-lucredio/distributor"
+    "js-distributor": "file:../../js-distributor/distributor"
   },
   "devDependencies": {
     "cross-env": "^7.0.3",

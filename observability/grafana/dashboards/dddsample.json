@@ -58,7 +58,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (instance, path) (rate(http_request_duration_seconds_count[1m]))",
+          "expr": "sum by (instance, path) (rate(http_request_duration_seconds_count{instance!~\"host.docker.internal.*\", path!~\"/images/.*|/css/.*|/js/.*|.*\\\\.js|.*\\\\.css|.*\\\\.html\"}[1m]))",
           "legendFormat": "{{instance}} {{path}}",
           "refId": "A"
         }
@@ -102,12 +102,12 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum by (le, instance) (rate(http_request_duration_seconds_bucket[1m])))",
+          "expr": "histogram_quantile(0.95, sum by (le, instance) (rate(http_request_duration_seconds_bucket{instance!~\"host.docker.internal.*\", path!~\"/images/.*|/css/.*|/js/.*|.*\\\\.js|.*\\\\.css|.*\\\\.html\"}[1m])))",
           "legendFormat": "p95 {{instance}}",
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.50, sum by (le, instance) (rate(http_request_duration_seconds_bucket[1m])))",
+          "expr": "histogram_quantile(0.50, sum by (le, instance) (rate(http_request_duration_seconds_bucket{instance!~\"host.docker.internal.*\", path!~\"/images/.*|/css/.*|/js/.*|.*\\\\.js|.*\\\\.css|.*\\\\.html\"}[1m])))",
           "legendFormat": "p50 {{instance}}",
           "refId": "B"
         }
@@ -151,7 +151,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (instance, status_code) (rate(http_request_duration_seconds_count{status_code=~\"[45]..\"}[1m]))",
+          "expr": "sum by (instance, status_code) (rate(http_request_duration_seconds_count{instance!~\"host.docker.internal.*\", status_code=~\"[45]..\", path!~\"/images/.*|/css/.*|/js/.*|.*\\\\.js|.*\\\\.css|.*\\\\.html\"}[1m]))",
           "legendFormat": "{{instance}} HTTP {{status_code}}",
           "refId": "A"
         }
@@ -206,7 +206,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (instance) (rate(cargo_bookings_total[1m]))",
+          "expr": "sum by (instance) (rate(cargo_bookings_total{instance!~\"host.docker.internal.*\"}[1m]))",
           "legendFormat": "bookings/s {{instance}}",
           "refId": "A"
         }
@@ -249,7 +249,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (instance, type) (rate(handling_events_total[1m]))",
+          "expr": "sum by (instance, type) (rate(handling_events_total{instance!~\"host.docker.internal.*\"}[1m]))",
           "legendFormat": "{{instance}} {{type}}",
           "refId": "A"
         }
@@ -292,7 +292,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (instance) (rate(cargo_inspections_total[1m]))",
+          "expr": "sum by (instance) (rate(cargo_inspections_total{instance!~\"host.docker.internal.*\"}[1m]))",
           "legendFormat": "inspections/s {{instance}}",
           "refId": "A"
         }
@@ -348,12 +348,12 @@
       },
       "targets": [
         {
-          "expr": "process_resident_memory_bytes",
+          "expr": "process_resident_memory_bytes{instance!~\"host.docker.internal.*\"}",
           "legendFormat": "RSS {{instance}}",
           "refId": "A"
         },
         {
-          "expr": "nodejs_heap_size_used_bytes",
+          "expr": "nodejs_heap_size_used_bytes{instance!~\"host.docker.internal.*\"}",
           "legendFormat": "heap used {{instance}}",
           "refId": "B"
         }
@@ -397,7 +397,7 @@
       },
       "targets": [
         {
-          "expr": "rate(process_cpu_seconds_total[1m])",
+          "expr": "rate(process_cpu_seconds_total{instance!~\"host.docker.internal.*\"}[1m])",
           "legendFormat": "CPU {{instance}}",
           "refId": "A"
         }
