@@ -5,16 +5,16 @@
 # host.docker.internal resolves to the Windows/Mac host on Docker Desktop,
 # and to the host-gateway on Linux (extra_hosts in docker-compose.observability.yml).
 
-# ── Monolith ─────────────────────────────────────────────────────────────────
+# ── alpha ───────────────────────────────────────────────────────────────────
 - targets:
     - host.docker.internal:8080
   labels:
     app: dddsample
-    instance: monolith
+    instance: alpha
 
-# ── Distributed servers ──────────────────────────────────────────────────────
-# /metrics is on the same port as the app (express-prom-bundle).
+# ── beta ───────────────────────────────────────────────────────────────────
 - targets:
-    - host.docker.internal:8080   # alpha
+    - host.docker.internal:3002
   labels:
     app: dddsample
+    instance: beta
