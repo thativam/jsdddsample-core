@@ -15,6 +15,7 @@ async function connect(url) {
   }
 
   function publish(exchange, payload) {
+    console.log(`[RabbitMQ] → ${exchange}`, JSON.stringify(payload));
     channel.publish(exchange, '', Buffer.from(JSON.stringify(payload)), { persistent: true });
   }
 
@@ -25,6 +26,7 @@ async function connect(url) {
       if (!msg) return;
       try {
         const payload = JSON.parse(msg.content.toString());
+        console.log(`[RabbitMQ] ← ${exchange}`, JSON.stringify(payload));
         await handler(payload);
         channel.ack(msg);
       } catch (e) {

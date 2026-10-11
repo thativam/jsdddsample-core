@@ -44,5 +44,5 @@ servers:
       url: localhost
       port: 3003
     functions:
-    - declarationPattern: assignCargoToRouteImpl
-      method: http-get
+    - declarationPattern: assignCargoToRoute
+      method: http-post

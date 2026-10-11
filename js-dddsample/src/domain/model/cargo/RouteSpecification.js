@@ -8,10 +8,13 @@ function RouteSpecification(origin, destination, arrivalDeadline) {
   const _deadline = arrivalDeadline instanceof Date ? arrivalDeadline : new Date(arrivalDeadline);
 
   function isSatisfiedBy(itinerary) {
-    return itinerary != null &&
-      origin.sameIdentityAs(itinerary.initialDepartureLocation()) &&
-      destination.sameIdentityAs(itinerary.finalArrivalLocation()) &&
-      _deadline > itinerary.finalArrivalDate();
+    if (itinerary == null) return false;
+    const depLocation = itinerary.initialDepartureLocation();
+    const arrLocation = itinerary.finalArrivalLocation();
+    const arrDate     = itinerary.finalArrivalDate();
+    return origin.sameIdentityAs(depLocation) &&
+      destination.sameIdentityAs(arrLocation) &&
+      _deadline > arrDate;
   }
 
   function origin_()          { return origin; }

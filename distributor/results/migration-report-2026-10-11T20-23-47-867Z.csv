@@ -1,0 +1,7 @@
+division,server,dir,installOk,unitTotal,unitPassed,unitFailed,statementsPct,branchesPct,linesPct,functionsPct,acceptanceTotal,acceptancePassed,acceptanceFailed,acceptanceFlaky,acceptanceSkipped,notes
+config-sv1,alpha,dist/sv1/alpha-test-server,true,172,172,0,79.61,68.09,83.81,82.78,5,5,0,0,0,
+config-sv1,beta,dist/sv1/beta-test-server,true,172,172,0,79.03,68.09,83.08,82.11,5,5,0,0,0,
+config-valid-monolith,alpha,dist/mono/alpha-test-server,true,172,172,0,79.61,68.09,83.81,82.78,5,5,0,0,0,
+config-valid,alpha,dist/distributedValid/alpha-test-server,true,172,172,0,79.61,68.09,83.81,82.78,5,5,0,0,0,
+config-valid,beta,dist/distributedValid/beta-test-server,true,172,172,0,79.03,68.09,83.08,82.11,5,5,0,0,0,
+config-valid,gamma,dist/distributedValid/gamma-test-server,true,172,172,0,76.58,67.41,80.78,77.99,5,5,0,0,0,
