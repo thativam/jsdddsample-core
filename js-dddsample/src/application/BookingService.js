@@ -51,7 +51,7 @@ async function requestPossibleRoutesForCargo(trackingIdStr) {
  * @param {Itinerary} itinerary
  * @param {string}    trackingIdStr
  */
-async function assignCargoToRoute(itinerary, trackingIdStr) {
+async function assignCargoToRouteImpl(itinerary, trackingIdStr) {
   const cargo = await cargoRepository.find(TrackingId(trackingIdStr));
   if (!cargo) throw new Error(`Can't assign itinerary to non-existing cargo ${trackingIdStr}`);
   cargo.assignToRoute(itinerary);
@@ -76,4 +76,4 @@ async function changeDestination(trackingIdStr, unLocodeStr) {
   console.info(`Changed destination for cargo ${trackingIdStr} to ${routeSpec.destination()}`);
 }
 
-export { bookNewCargo, requestPossibleRoutesForCargo, assignCargoToRoute, changeDestination };
+export { bookNewCargo, requestPossibleRoutesForCargo, assignCargoToRouteImpl, changeDestination };

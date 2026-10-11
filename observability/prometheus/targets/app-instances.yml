@@ -18,3 +18,10 @@
   labels:
     app: dddsample
     instance: beta
+
+# ── gamma ───────────────────────────────────────────────────────────────────
+- targets:
+    - host.docker.internal:3003
+  labels:
+    app: dddsample
+    instance: gamma

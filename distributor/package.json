@@ -6,6 +6,7 @@
   "scripts": {
     "dist": "js-distributor-scripts -c ./utils/config-valid.yml",
     "mono": "js-distributor-scripts -c ./utils/config-valid-monolith.yml",
+    "sv1": "js-distributor-scripts -c ./utils/config-sv1.yml",
     "migrate:test": "node scripts/orchestrate-migration-tests.mjs",
     "inject:metrics": "node scripts/inject-metrics.mjs",
     "start:dist": "node scripts/start-dist.mjs",
@@ -14,7 +15,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "js-distributor": "file:../../js-distributor/distributor"
+    "js-distributor": "file:../../../../Personal/js-distributor-lucredio/distributor"
   },
   "devDependencies": {
     "cross-env": "^7.0.3",

@@ -48,7 +48,7 @@ async function loadCargoForRouting(trackingId) {
 
 async function assignCargoToRoute(trackingIdStr, routeCandidateDTO) {
   const itinerary = await itinFromDTO(routeCandidateDTO);
-  await BookingService.assignCargoToRoute(itinerary, trackingIdStr);
+  await BookingService.assignCargoToRouteImpl(itinerary, trackingIdStr);
 }
 
 async function changeDestination(trackingId, destinationUnLocode) {

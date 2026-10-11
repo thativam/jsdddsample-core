@@ -27,9 +27,9 @@
   "endpoints": [
     {
       "id": "createCargo",
-      "server": "alpha",
-      "port": 8080,
-      "url": "http://localhost:8080/createCargo",
+      "server": "beta",
+      "port": 3002,
+      "url": "http://localhost:3002/createCargo",
       "method": "GET",
       "params": "originUnLocodeStr=JPTKO&destinationUnLocodeStr=USNYC&arrivalDeadline=2027-12-31",
       "weight": 3

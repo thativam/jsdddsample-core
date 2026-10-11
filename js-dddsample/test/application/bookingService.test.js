@@ -65,7 +65,7 @@ describe('BookingService', () => {
     const itinerary = Itinerary([
       Leg(v100, HONGKONG, STOCKHOLM, new Date('2009-03-03'), new Date('2009-03-16')),
     ]);
-    await BookingService.assignCargoToRoute(itinerary, tid);
+    await BookingService.assignCargoToRouteImpl(itinerary, tid);
     const cargo = await cargoRepo.find(TrackingId(tid));
     expect(cargo.delivery().routingStatus()).toBe(RoutingStatus.ROUTED);
   });

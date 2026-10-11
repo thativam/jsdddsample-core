@@ -76,7 +76,7 @@ describe('Cargo lifecycle scenario', () => {
       Leg(v200, NEWYORK,  CHICAGO,   new Date('2009-03-10'), new Date('2009-03-14')),
       Leg(v200, CHICAGO,  STOCKHOLM, new Date('2009-03-14'), new Date('2009-03-16')),
     ]);
-    await BookingService.assignCargoToRoute(itinerary, trackingId);
+    await BookingService.assignCargoToRouteImpl(itinerary, trackingId);
 
     cargo = await cargoRepo.find(TrackingId(trackingId));
     expect(cargo.delivery().routingStatus()).toBe(RoutingStatus.ROUTED);
@@ -121,7 +121,7 @@ describe('Cargo lifecycle scenario', () => {
     const trackingId = await BookingService.bookNewCargo(
       'CNHKG', 'SESTO', new Date('2009-03-18')
     );
-    await BookingService.assignCargoToRoute(Itinerary([
+    await BookingService.assignCargoToRouteImpl(Itinerary([
       Leg(v100, HONGKONG, NEWYORK,   new Date('2009-03-03'), new Date('2009-03-09')),
       Leg(v200, NEWYORK,  STOCKHOLM, new Date('2009-03-14'), new Date('2009-03-16')),
     ]), trackingId);
@@ -136,7 +136,7 @@ describe('Cargo lifecycle scenario', () => {
     const trackingId = await BookingService.bookNewCargo(
       'CNHKG', 'SESTO', new Date('2009-03-18')
     );
-    await BookingService.assignCargoToRoute(Itinerary([
+    await BookingService.assignCargoToRouteImpl(Itinerary([
       Leg(v100, HONGKONG, NEWYORK,   new Date('2009-03-03'), new Date('2009-03-09')),
       Leg(v200, NEWYORK,  STOCKHOLM, new Date('2009-03-14'), new Date('2009-03-16')),
     ]), trackingId);

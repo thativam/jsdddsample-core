@@ -74,7 +74,7 @@ const PROM_BUNDLE_RE =
   /promBundle\(\{[\s\S]*?includeMethod\s*:\s*true[\s\S]*?\}\)/;
 
 const PROM_BUNDLE_REPLACEMENT =
-  'promBundle({ includeMethod: true, promClient: { collectDefaultMetrics: {} } })';
+  'promBundle({ includeMethod: true, includePath: true, promClient: { collectDefaultMetrics: {} } })';
 
 function patchStartJs(serverDir, id) {
   const startPath = path.join(serverDir, 'start.js');
