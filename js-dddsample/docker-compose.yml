@@ -18,6 +18,7 @@ services:
     ports:
       - "5672:5672"    # AMQP
       - "15672:15672"  # Management UI → http://localhost:15672  (guest/guest)
+      - "15692:15692"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
 

@@ -1,0 +1,164 @@
+{
+  "title": "RabbitMQ",
+  "uid": "rabbitmq-dddsample",
+  "schemaVersion": 36,
+  "version": 2,
+  "refresh": "15s",
+  "time": { "from": "now-30m", "to": "now" },
+  "templating": {
+    "list": [
+      { "name": "datasource", "type": "datasource", "query": "prometheus", "refresh": 1, "hide": 0 }
+    ]
+  },
+  "panels": [
+
+    { "type": "row", "title": "Health", "id": 100, "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 }, "collapsed": false },
+
+    {
+      "id": 1, "type": "stat", "title": "Memory alarm",
+      "gridPos": { "x": 0, "y": 1, "w": 4, "h": 3 },
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "mappings": [{"type":"value","options":{"0":{"text":"OK","color":"green"},"1":{"text":"ALARM","color":"red"}}}], "thresholds": { "mode": "absolute", "steps": [{"color":"green","value":null},{"color":"red","value":1}] } } },
+      "targets": [{ "expr": "rabbitmq_alarms_memory_used_watermark", "legendFormat": "", "datasource": "${datasource}" }]
+    },
+    {
+      "id": 2, "type": "stat", "title": "Disk alarm",
+      "gridPos": { "x": 4, "y": 1, "w": 4, "h": 3 },
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "mappings": [{"type":"value","options":{"0":{"text":"OK","color":"green"},"1":{"text":"ALARM","color":"red"}}}], "thresholds": { "mode": "absolute", "steps": [{"color":"green","value":null},{"color":"red","value":1}] } } },
+      "targets": [{ "expr": "rabbitmq_alarms_free_disk_space_watermark", "legendFormat": "", "datasource": "${datasource}" }]
+    },
+    {
+      "id": 3, "type": "stat", "title": "File descriptor alarm",
+      "gridPos": { "x": 8, "y": 1, "w": 4, "h": 3 },
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "mappings": [{"type":"value","options":{"0":{"text":"OK","color":"green"},"1":{"text":"ALARM","color":"red"}}}], "thresholds": { "mode": "absolute", "steps": [{"color":"green","value":null},{"color":"red","value":1}] } } },
+      "targets": [{ "expr": "rabbitmq_alarms_file_descriptor_limit", "legendFormat": "", "datasource": "${datasource}" }]
+    },
+    {
+      "id": 4, "type": "stat", "title": "Uptime",
+      "gridPos": { "x": 12, "y": 1, "w": 4, "h": 3 },
+      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "targets": [{ "expr": "rabbitmq_erlang_uptime_seconds", "legendFormat": "", "datasource": "${datasource}" }]
+    },
+    {
+      "id": 5, "type": "stat", "title": "Memory used / limit",
+      "gridPos": { "x": 16, "y": 1, "w": 4, "h": 3 },
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "thresholds": { "mode": "absolute", "steps": [{"color":"green","value":null},{"color":"yellow","value":0.6},{"color":"red","value":0.8}] } } },
+      "targets": [{ "expr": "rabbitmq_process_resident_memory_bytes / rabbitmq_resident_memory_limit_bytes", "legendFormat": "", "datasource": "${datasource}" }]
+    },
+    {
+      "id": 6, "type": "stat", "title": "Disk free",
+      "gridPos": { "x": 20, "y": 1, "w": 4, "h": 3 },
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "bytes", "thresholds": { "mode": "absolute", "steps": [{"color":"red","value":null},{"color":"yellow","value":1073741824},{"color":"green","value":5368709120}] } } },
+      "targets": [{ "expr": "rabbitmq_disk_space_available_bytes", "legendFormat": "", "datasource": "${datasource}" }]
+    },
+
+    { "type": "row", "title": "Connections & consumers", "id": 200, "gridPos": { "x": 0, "y": 4, "w": 24, "h": 1 }, "collapsed": false },
+
+    {
+      "id": 10, "type": "stat", "title": "Open connections",
+      "gridPos": { "x": 0, "y": 5, "w": 4, "h": 3 },
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": {} },
+      "targets": [{ "expr": "rabbitmq_connections", "legendFormat": "", "datasource": "${datasource}" }]
+    },
+    {
+      "id": 11, "type": "stat", "title": "Open channels",
+      "gridPos": { "x": 4, "y": 5, "w": 4, "h": 3 },
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": {} },
+      "targets": [{ "expr": "rabbitmq_channels", "legendFormat": "", "datasource": "${datasource}" }]
+    },
+    {
+      "id": 12, "type": "stat", "title": "Consumers",
+      "gridPos": { "x": 8, "y": 5, "w": 4, "h": 3 },
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [{"color":"red","value":null},{"color":"green","value":1}] } } },
+      "targets": [{ "expr": "rabbitmq_consumers", "legendFormat": "", "datasource": "${datasource}" }]
+    },
+    {
+      "id": 13, "type": "stat", "title": "Queues",
+      "gridPos": { "x": 12, "y": 5, "w": 4, "h": 3 },
+      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": {} },
+      "targets": [{ "expr": "rabbitmq_queues", "legendFormat": "", "datasource": "${datasource}" }]
+    },
+    {
+      "id": 14, "type": "timeseries", "title": "Connection open rate",
+      "gridPos": { "x": 16, "y": 5, "w": 8, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } } },
+      "targets": [
+        { "expr": "rate(rabbitmq_connections_opened_total[1m])", "legendFormat": "opened/s", "datasource": "${datasource}" },
+        { "expr": "rate(rabbitmq_connections_closed_total[1m])", "legendFormat": "closed/s", "datasource": "${datasource}" }
+      ]
+    },
+
+    { "type": "row", "title": "Message rates", "id": 300, "gridPos": { "x": 0, "y": 13, "w": 24, "h": 1 }, "collapsed": false },
+
+    {
+      "id": 20, "type": "timeseries", "title": "Publish & deliver rate (msg/s)",
+      "description": "How fast messages are entering and leaving RabbitMQ.",
+      "gridPos": { "x": 0, "y": 14, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } } },
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "expr": "rate(rabbitmq_channel_messages_published_total[1m])", "legendFormat": "published/s", "datasource": "${datasource}" },
+        { "expr": "rate(rabbitmq_channel_messages_delivered_total[1m])", "legendFormat": "delivered/s", "datasource": "${datasource}" }
+      ]
+    },
+    {
+      "id": 21, "type": "timeseries", "title": "Redelivery & unroutable rate (msg/s)",
+      "description": "Redeliveries indicate consumer failures or noAck issues. Unroutable messages are dropped silently.",
+      "gridPos": { "x": 12, "y": 14, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } } },
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "expr": "rate(rabbitmq_channel_messages_redelivered_total[1m])", "legendFormat": "redelivered/s", "datasource": "${datasource}" },
+        { "expr": "rate(rabbitmq_channel_messages_unroutable_dropped_total[1m])", "legendFormat": "unroutable dropped/s", "datasource": "${datasource}" }
+      ]
+    },
+    {
+      "id": 22, "type": "timeseries", "title": "Auto-ack vs manual-ack deliveries (cumulative)",
+      "description": "If auto-ack = total deliveries and manual-ack = 0, all consumers use noAck:true — messages cannot be requeued on failure.",
+      "gridPos": { "x": 0, "y": 22, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } } },
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "expr": "rabbitmq_global_messages_delivered_consume_auto_ack_total", "legendFormat": "auto-ack (noAck=true)", "datasource": "${datasource}" },
+        { "expr": "rabbitmq_global_messages_delivered_consume_manual_ack_total", "legendFormat": "manual-ack", "datasource": "${datasource}" },
+        { "expr": "rabbitmq_global_messages_acknowledged_total", "legendFormat": "acknowledged", "datasource": "${datasource}" }
+      ]
+    },
+    {
+      "id": 23, "type": "timeseries", "title": "Total messages published (cumulative)",
+      "gridPos": { "x": 12, "y": 22, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } } },
+      "targets": [
+        { "expr": "rabbitmq_global_messages_received_total", "legendFormat": "received", "datasource": "${datasource}" },
+        { "expr": "rabbitmq_global_messages_routed_total", "legendFormat": "routed", "datasource": "${datasource}" },
+        { "expr": "rabbitmq_global_messages_delivered_total", "legendFormat": "delivered", "datasource": "${datasource}" }
+      ]
+    },
+
+    { "type": "row", "title": "Queue depth", "id": 400, "gridPos": { "x": 0, "y": 30, "w": 24, "h": 1 }, "collapsed": false },
+
+    {
+      "id": 30, "type": "timeseries", "title": "Messages ready (backlog)",
+      "description": "Non-zero sustained values mean consumers can't keep up.",
+      "gridPos": { "x": 0, "y": 31, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 }, "thresholds": { "mode": "absolute", "steps": [{"color":"green","value":null},{"color":"yellow","value":100},{"color":"red","value":1000}] } } },
+      "targets": [{ "expr": "rabbitmq_queue_messages_ready", "legendFormat": "ready", "datasource": "${datasource}" }]
+    },
+    {
+      "id": 31, "type": "timeseries", "title": "Messages unacknowledged (in-flight)",
+      "description": "Messages delivered to a consumer but not yet acked. Always 0 when noAck:true.",
+      "gridPos": { "x": 12, "y": 31, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } } },
+      "targets": [{ "expr": "rabbitmq_queue_messages_unacked", "legendFormat": "unacked", "datasource": "${datasource}" }]
+    }
+  ]
+}

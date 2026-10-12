@@ -25,3 +25,10 @@
   labels:
     app: dddsample
     instance: gamma
+
+# ── theta ───────────────────────────────────────────────────────────────────
+- targets:
+    - host.docker.internal:3004
+  labels:
+    app: dddsample
+    instance: theta

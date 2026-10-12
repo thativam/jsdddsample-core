@@ -5,6 +5,7 @@ import { toDTO as itinToDTO, fromDTO as itinFromDTO }   from './assembler/Itiner
 import * as BookingService from '../../application/BookingService.js';
 
 async function listShippingLocations() {
+  console.log("Listing shipping locations...")
   const locations = await locationRepository.getAll();
   return locations.map(loc => ({
     unLocode: loc.unLocode().idString(),

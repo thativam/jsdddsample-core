@@ -9,3 +9,6 @@ scrape_configs:
       - files:
           - /etc/prometheus/targets/*.yml
         refresh_interval: 30s
+  - job_name: 'rabbitmq'
+    static_configs:
+      - targets: ['host.docker.internal:15692']

@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dist": "js-distributor-scripts -c ./utils/config-valid.yml",
+    "sv4": "js-distributor-scripts -c ./utils/config-valid-4sv.yml",
     "mono": "js-distributor-scripts -c ./utils/config-valid-monolith.yml",
     "sv1": "js-distributor-scripts -c ./utils/config-sv1.yml",
     "migrate:test": "node scripts/orchestrate-migration-tests.mjs",
