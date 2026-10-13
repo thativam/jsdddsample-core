@@ -1,10 +1,14 @@
+networks:
+  dddsample:
+    external: true   # shared with app containers and infra
+
 services:
   prometheus:
     image: prom/prometheus:v2.52.0
     container_name: dddsample-prometheus
-    # Bridge network with host-gateway so Prometheus can reach app instances
-    # running on the host (Windows/Mac: Docker Desktop routes host.docker.internal
-    # to the host automatically; Linux: extra_hosts below handles it).
+    # host.docker.internal lets Prometheus reach apps running on the HOST
+    # (used in host mode). In docker mode the app containers are reached by
+    # service name via the dddsample network instead.
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
@@ -19,6 +23,8 @@ services:
       - '--web.enable-remote-write-receiver'   # k6 pushes metrics here
     ports:
       - "9090:9090"
+    networks:
+      - dddsample
     restart: unless-stopped
 
   grafana:
@@ -36,6 +42,26 @@ services:
       - grafana-data:/var/lib/grafana
     ports:
       - "8081:3000"
+    networks:
+      - dddsample
+    restart: unless-stopped
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: dddsample-cadvisor
+    privileged: true
+    devices:
+      - /dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    ports:
+      - "8082:8080"
+    networks:
+      - dddsample
     restart: unless-stopped
 
 volumes:

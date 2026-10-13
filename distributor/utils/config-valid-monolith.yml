@@ -13,7 +13,7 @@ codeGenerationParameters:
   #   - "product.js"
 default:
   rabbit:
-    url: localhost
+    url: host.docker.internal
     port: 5672
 servers:
   - id: alpha
@@ -22,3 +22,5 @@ servers:
         to: package.json  
       - from: .env
         to: .env
+      - from: .env.docker
+        to: .env.docker

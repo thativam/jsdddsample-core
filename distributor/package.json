@@ -10,7 +10,9 @@
     "sv1": "js-distributor-scripts -c ./utils/config-sv1.yml",
     "migrate:test": "node scripts/orchestrate-migration-tests.mjs",
     "inject:metrics": "node scripts/inject-metrics.mjs",
+    "inject:metrics:docker": "node scripts/inject-metrics.mjs --docker",
     "start:dist": "node scripts/start-dist.mjs",
+    "start:dist:docker": "node scripts/start-dist.mjs --docker",
     "load:test": "cross-env K6_PROMETHEUS_RW_SERVER_URL=http://localhost:9090/api/v1/write k6 run --out experimental-prometheus-rw scripts/load-test.js"
   },
   "author": "",

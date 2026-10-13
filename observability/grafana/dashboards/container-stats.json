@@ -1,0 +1,268 @@
+{
+  "title": "Container Stats (cAdvisor)",
+  "uid": "cadvisor-dddsample",
+  "schemaVersion": 36,
+  "version": 1,
+  "refresh": "15s",
+  "time": { "from": "now-30m", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "type": "datasource",
+        "query": "prometheus",
+        "refresh": 1,
+        "hide": 0
+      },
+      {
+        "name": "container",
+        "type": "query",
+        "datasource": "${datasource}",
+        "query": "label_values(container_last_seen{image!=\"\", name!~\".*cadvisor.*|.*prometheus.*|.*grafana.*\"}, name)",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".+",
+        "hide": 0,
+        "label": "Container"
+      }
+    ]
+  },
+  "panels": [
+
+    { "type": "row", "title": "CPU", "id": 100, "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 }, "collapsed": false },
+
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "CPU usage % per container",
+      "description": "Percentage of one CPU core used. Values > 100% mean more than one core.",
+      "gridPos": { "x": 0, "y": 1, "w": 24, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": { "lineWidth": 2 },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 50 },
+              { "color": "red", "value": 80 }
+            ]
+          }
+        }
+      },
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        {
+          "expr": "rate(container_cpu_usage_seconds_total{image!=\"\", name=~\"$container\"}[1m]) * 100",
+          "legendFormat": "{{ name }}",
+          "datasource": "${datasource}"
+        }
+      ]
+    },
+
+    { "type": "row", "title": "Memory", "id": 200, "gridPos": { "x": 0, "y": 9, "w": 24, "h": 1 }, "collapsed": false },
+
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Memory working set per container",
+      "description": "Working set = memory that cannot be reclaimed. More accurate than usage_bytes for OOM risk.",
+      "gridPos": { "x": 0, "y": 10, "w": 12, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": { "lineWidth": 2 }
+        }
+      },
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        {
+          "expr": "container_memory_working_set_bytes{image!=\"\", name=~\"$container\"}",
+          "legendFormat": "{{ name }}",
+          "datasource": "${datasource}"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Memory usage per container",
+      "description": "Total memory mapped by the container, including reclaimable cache.",
+      "gridPos": { "x": 12, "y": 10, "w": 12, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": { "lineWidth": 2 }
+        }
+      },
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        {
+          "expr": "container_memory_usage_bytes{image!=\"\", name=~\"$container\"}",
+          "legendFormat": "{{ name }}",
+          "datasource": "${datasource}"
+        }
+      ]
+    },
+
+    { "type": "row", "title": "Network I/O", "id": 300, "gridPos": { "x": 0, "y": 18, "w": 24, "h": 1 }, "collapsed": false },
+
+    {
+      "id": 20,
+      "type": "timeseries",
+      "title": "Network receive rate",
+      "gridPos": { "x": 0, "y": 19, "w": 12, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": { "lineWidth": 2 }
+        }
+      },
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        {
+          "expr": "rate(container_network_receive_bytes_total{image!=\"\", name=~\"$container\"}[1m])",
+          "legendFormat": "{{ name }}",
+          "datasource": "${datasource}"
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "type": "timeseries",
+      "title": "Network transmit rate",
+      "gridPos": { "x": 12, "y": 19, "w": 12, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": { "lineWidth": 2 }
+        }
+      },
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        {
+          "expr": "rate(container_network_transmit_bytes_total{image!=\"\", name=~\"$container\"}[1m])",
+          "legendFormat": "{{ name }}",
+          "datasource": "${datasource}"
+        }
+      ]
+    },
+
+    { "type": "row", "title": "Disk I/O", "id": 400, "gridPos": { "x": 0, "y": 27, "w": 24, "h": 1 }, "collapsed": false },
+
+    {
+      "id": 30,
+      "type": "timeseries",
+      "title": "Disk read rate",
+      "gridPos": { "x": 0, "y": 28, "w": 12, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": { "lineWidth": 2 }
+        }
+      },
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        {
+          "expr": "rate(container_fs_reads_bytes_total{image!=\"\", name=~\"$container\"}[1m])",
+          "legendFormat": "{{ name }}",
+          "datasource": "${datasource}"
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "type": "timeseries",
+      "title": "Disk write rate",
+      "gridPos": { "x": 12, "y": 28, "w": 12, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": { "lineWidth": 2 }
+        }
+      },
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        {
+          "expr": "rate(container_fs_writes_bytes_total{image!=\"\", name=~\"$container\"}[1m])",
+          "legendFormat": "{{ name }}",
+          "datasource": "${datasource}"
+        }
+      ]
+    },
+
+    { "type": "row", "title": "Overview", "id": 500, "gridPos": { "x": 0, "y": 36, "w": 24, "h": 1 }, "collapsed": false },
+
+    {
+      "id": 40,
+      "type": "table",
+      "title": "Container snapshot",
+      "description": "Current CPU%, memory working set, and network rates for each container.",
+      "gridPos": { "x": 0, "y": 37, "w": 24, "h": 8 },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "CPU %" },    "properties": [{ "id": "unit", "value": "percent" }, { "id": "custom.width", "value": 100 }] },
+          { "matcher": { "id": "byName", "options": "Memory" },   "properties": [{ "id": "unit", "value": "bytes"   }, { "id": "custom.width", "value": 120 }] },
+          { "matcher": { "id": "byName", "options": "Net RX/s" }, "properties": [{ "id": "unit", "value": "Bps"     }, { "id": "custom.width", "value": 100 }] },
+          { "matcher": { "id": "byName", "options": "Net TX/s" }, "properties": [{ "id": "unit", "value": "Bps"     }, { "id": "custom.width", "value": 100 }] }
+        ]
+      },
+      "options": {
+        "sortBy": [{ "displayName": "CPU %", "desc": true }]
+      },
+      "targets": [
+        {
+          "expr": "rate(container_cpu_usage_seconds_total{image!=\"\", name=~\"$container\"}[1m]) * 100",
+          "legendFormat": "{{ name }}",
+          "instant": true,
+          "refId": "CPU",
+          "datasource": "${datasource}"
+        },
+        {
+          "expr": "container_memory_working_set_bytes{image!=\"\", name=~\"$container\"}",
+          "legendFormat": "{{ name }}",
+          "instant": true,
+          "refId": "MEM",
+          "datasource": "${datasource}"
+        },
+        {
+          "expr": "rate(container_network_receive_bytes_total{image!=\"\", name=~\"$container\"}[1m])",
+          "legendFormat": "{{ name }}",
+          "instant": true,
+          "refId": "RX",
+          "datasource": "${datasource}"
+        },
+        {
+          "expr": "rate(container_network_transmit_bytes_total{image!=\"\", name=~\"$container\"}[1m])",
+          "legendFormat": "{{ name }}",
+          "instant": true,
+          "refId": "TX",
+          "datasource": "${datasource}"
+        }
+      ],
+      "transformations": [
+        { "id": "labelsToFields", "options": { "mode": "columns" } },
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "Value #CPU": "CPU %",
+              "Value #MEM": "Memory",
+              "Value #RX":  "Net RX/s",
+              "Value #TX":  "Net TX/s",
+              "name":       "Container"
+            }
+          }
+        }
+      ]
+    }
+
+  ]
+}

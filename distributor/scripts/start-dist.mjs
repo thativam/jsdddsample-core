@@ -10,7 +10,11 @@
  *   node scripts/start-dist.mjs utils/config-valid-monolith.yml
  *   node scripts/start-dist.mjs --config utils/config-valid-monolith.yml
  *
- * Press Ctrl+C to stop all servers.
+ *   # Docker mode — runs `docker compose up` on the generated compose.yaml
+ *   node scripts/start-dist.mjs --docker
+ *   node scripts/start-dist.mjs --docker --config utils/config-valid-4sv.yml
+ *
+ * Press Ctrl+C to stop all servers (or containers in docker mode).
  */
 
 import { spawn }        from 'node:child_process';
@@ -29,12 +33,15 @@ function flag(name, fallback) {
   const i = args.indexOf(`--${name}`);
   return i === -1 ? fallback : args[i + 1];
 }
+function boolFlag(name) { return args.includes(`--${name}`); }
 
 // Accept config as positional arg (first non-flag), --config flag, or default.
 const positional = args.find(a => !a.startsWith('-'));
 const configArg  = positional
   ?? flag('config', null)
   ?? path.join(DISTRIBUTOR_ROOT, 'utils/config-valid.yml');
+
+const DOCKER_MODE = boolFlag('docker');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -68,70 +75,108 @@ if (servers.length === 0) {
   process.exit(0);
 }
 
-console.log(`Starting ${servers.length} distributed server(s)…\n`);
+if (DOCKER_MODE) {
+  // ── Docker mode ─────────────────────────────────────────────────────────────
 
-const children = [];
-
-servers.forEach((server, idx) => {
-  const id        = server.id;
-  const serverDir = path.join(distRoot, id);
-  const color     = COLORS[idx % COLORS.length];
-
-  if (!existsSync(serverDir)) {
-    console.error(`${color}[${id}]${RESET} Directory not found: ${serverDir} — run npm run dist first`);
-    return;
+  const composePath = path.join(distRoot, 'compose.yaml');
+  if (!existsSync(composePath)) {
+    console.error(`compose.yaml not found at ${composePath} — run npm run dist then npm run inject:metrics:docker first`);
+    process.exit(1);
   }
 
-  const nmDir = path.join(serverDir, 'node_modules');
-  if (!existsSync(nmDir)) {
-    console.error(`${color}[${id}]${RESET} node_modules missing — run npm run inject:metrics first`);
-    return;
-  }
+  console.log(`[start-dist] Docker mode — docker compose up -d (${composePath})\n`);
 
-  // Read the start command from package.json scripts.start, fall back to npm start
-  let startArgs = ['start'];
-  try {
-    const pkg = JSON.parse(readFileSync(path.join(serverDir, 'package.json'), 'utf8'));
-    if (pkg.scripts?.start) {
-      // Use npm start so it picks up the correct Node flags (--env-file etc.)
-      startArgs = ['start'];
-    }
-  } catch { /* use default */ }
-
-  const child = spawn('npm', startArgs, {
-    cwd:   serverDir,
+  const child = spawn('docker', ['compose', '-f', composePath, 'up', '--build', '-d'], {
     shell: true,
-    env:   { ...process.env },
+    stdio: 'inherit',
   });
 
-  children.push({ id, child });
+  child.on('exit', (code) => {
+    if (code === 0) {
+      console.log('\n[start-dist] Containers started. Follow logs with:');
+      console.log(`  docker compose -f ${composePath} logs -f`);
+    } else {
+      console.error(`\n[start-dist] docker compose exited with code ${code}`);
+      process.exit(code);
+    }
+  });
 
-  child.stdout.on('data', (d) => {
-    const lines = prefixLines(id, color, d);
-    if (lines) console.log(lines);
-  });
-  child.stderr.on('data', (d) => {
-    const lines = prefixLines(id, color, d);
-    if (lines) console.error(lines);
-  });
-  child.on('exit', (code, signal) => {
-    const reason = signal ? `signal ${signal}` : `code ${code}`;
-    console.log(`${color}[${id}]${RESET} exited (${reason})`);
-  });
   child.on('error', (err) => {
-    console.error(`${color}[${id}]${RESET} failed to start: ${err.message}`);
+    console.error(`[start-dist] Failed to run docker compose: ${err.message}`);
+    process.exit(1);
   });
-});
 
-// ── Graceful shutdown ─────────────────────────────────────────────────────────
+  process.on('SIGINT',  () => process.exit(0));
+  process.on('SIGTERM', () => process.exit(0));
 
-function shutdown() {
-  console.log('\nStopping all servers…');
-  for (const { child } of children) {
-    child.kill('SIGTERM');
+} else {
+  // ── Host mode ───────────────────────────────────────────────────────────────
+
+  console.log(`Starting ${servers.length} distributed server(s)…\n`);
+
+  const children = [];
+
+  servers.forEach((server, idx) => {
+    const id        = server.id;
+    const serverDir = path.join(distRoot, id);
+    const color     = COLORS[idx % COLORS.length];
+
+    if (!existsSync(serverDir)) {
+      console.error(`${color}[${id}]${RESET} Directory not found: ${serverDir} — run npm run dist first`);
+      return;
+    }
+
+    const nmDir = path.join(serverDir, 'node_modules');
+    if (!existsSync(nmDir)) {
+      console.error(`${color}[${id}]${RESET} node_modules missing — run npm run inject:metrics first`);
+      return;
+    }
+
+    // Read the start command from package.json scripts.start, fall back to npm start
+    let startArgs = ['start'];
+    try {
+      const pkg = JSON.parse(readFileSync(path.join(serverDir, 'package.json'), 'utf8'));
+      if (pkg.scripts?.start) {
+        // Use npm start so it picks up the correct Node flags (--env-file etc.)
+        startArgs = ['start'];
+      }
+    } catch { /* use default */ }
+
+    const child = spawn('npm', startArgs, {
+      cwd:   serverDir,
+      shell: true,
+      env:   { ...process.env },
+    });
+
+    children.push({ id, child });
+
+    child.stdout.on('data', (d) => {
+      const lines = prefixLines(id, color, d);
+      if (lines) console.log(lines);
+    });
+    child.stderr.on('data', (d) => {
+      const lines = prefixLines(id, color, d);
+      if (lines) console.error(lines);
+    });
+    child.on('exit', (code, signal) => {
+      const reason = signal ? `signal ${signal}` : `code ${code}`;
+      console.log(`${color}[${id}]${RESET} exited (${reason})`);
+    });
+    child.on('error', (err) => {
+      console.error(`${color}[${id}]${RESET} failed to start: ${err.message}`);
+    });
+  });
+
+  // ── Graceful shutdown ───────────────────────────────────────────────────────
+
+  function shutdown() {
+    console.log('\nStopping all servers…');
+    for (const { child } of children) {
+      child.kill('SIGTERM');
+    }
+    setTimeout(() => process.exit(0), 1000);
   }
-  setTimeout(() => process.exit(0), 1000);
-}
 
-process.on('SIGINT',  shutdown);
-process.on('SIGTERM', shutdown);
+  process.on('SIGINT',  shutdown);
+  process.on('SIGTERM', shutdown);
+}

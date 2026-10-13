@@ -1,0 +1,48 @@
+# Shared infrastructure: MongoDB + RabbitMQ
+# All app composes attach to the same external network ("dddsample") so they
+# can reach these services by hostname.
+#
+# First run (once):
+#   docker network create dddsample
+#
+# Then:
+#   docker compose -f docker-compose.infra.yml up -d
+
+networks:
+  dddsample:
+    external: true
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: dddsample-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"   # keep published so host-mode servers still work
+    volumes:
+      - mongodb-data:/data/db
+    networks:
+      - dddsample
+
+  rabbit:
+    image: rabbitmq:3.13-management
+    container_name: dddsample-rabbit
+    restart: unless-stopped
+    ports:
+      - "5672:5672"     # AMQP  — keep published for host-mode servers
+      - "15672:15672"   # management UI
+      - "15692:15692"   # Prometheus metrics
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    command: >
+      sh -c "rabbitmq-plugins enable rabbitmq_prometheus &&
+             docker-entrypoint.sh rabbitmq-server"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - dddsample
+
+volumes:
+  mongodb-data:
+  rabbitmq-data:

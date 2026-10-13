@@ -5,14 +5,14 @@ codeGenerationParameters:
   cleanOutput: true               # delete output folder before?
   generateProjects: false          # generate new npm projects?
   generateDocker: true            # generate docker files for each server?
-  generateTestServers: true       # Generate test server, default is to not generate
+  generateTestServers: false       # Generate test server, default is to not generate
   generateMetricsServer: true
   ignore:                         # ignore the following folders
      - "node_modules"
   #   - "main*"
   #   - "product.js"
 rabbitParameters:               # Details of the RabbitMQ communication
-  url: localhost
+  url: host.docker.internal
   port: 5672
   numConnectionAttempts: 5
   timeBetweenAttempts: 10  
@@ -23,26 +23,32 @@ servers:
         to: package.json  
       - from: .env
         to: .env
+      - from: .env.docker
+        to: .env.docker
   - id: beta
     http:
-      url: localhost
+      url: beta
       port: 3002
     copyFiles:
       - from: def_package.json    # relative to current path
         to: package.json  
       - from: .env
         to: .env
+      - from: .env.docker
+        to: .env.docker
     functions:
     - declarationPattern: createCargo
       method: http-get
   - id: gamma
     copyFiles:
       - from: def_package.json    # relative to current path
-        to: package.json  
+        to: package.json
       - from: .env
         to: .env
+      - from: .env.docker
+        to: .env.docker
     http:
-      url: localhost
+      url: gamma
       port: 3003
     functions:
     - declarationPattern: assignCargoToRoute
@@ -50,11 +56,13 @@ servers:
   - id: theta
     copyFiles:
       - from: def_package.json    # relative to current path
-        to: package.json  
+        to: package.json
       - from: .env
         to: .env
+      - from: .env.docker
+        to: .env.docker
     http:
-      url: localhost
+      url: theta
       port: 3004
     functions:
     - declarationPattern: listShippingLocations

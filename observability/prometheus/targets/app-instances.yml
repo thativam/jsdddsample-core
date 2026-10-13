@@ -2,33 +2,32 @@
 # Re-run after adding/removing servers in the config.
 # Prometheus reloads this file every 30 s — no restart needed.
 
-# host.docker.internal resolves to the Windows/Mac host on Docker Desktop,
-# and to the host-gateway on Linux (extra_hosts in docker-compose.observability.yml).
+# Docker mode: targets use container service names on the dddsample network.
 
 # ── alpha ───────────────────────────────────────────────────────────────────
 - targets:
-    - host.docker.internal:8080
+    - alpha:8080
   labels:
     app: dddsample
     instance: alpha
 
 # ── beta ───────────────────────────────────────────────────────────────────
 - targets:
-    - host.docker.internal:3002
+    - beta:3002
   labels:
     app: dddsample
     instance: beta
 
 # ── gamma ───────────────────────────────────────────────────────────────────
 - targets:
-    - host.docker.internal:3003
+    - gamma:3003
   labels:
     app: dddsample
     instance: gamma
 
 # ── theta ───────────────────────────────────────────────────────────────────
 - targets:
-    - host.docker.internal:3004
+    - theta:3004
   labels:
     app: dddsample
     instance: theta
